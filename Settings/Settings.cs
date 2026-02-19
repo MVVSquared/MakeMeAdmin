@@ -1210,5 +1210,17 @@ namespace SinclairCC.MakeMeAdmin
                 settingsKey.Close();
             }
         }
+
+        public static string WebLogEndpoint
+        {
+            get
+            {
+                return (string)Microsoft.Win32.Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Sinclair Community College\Make Me Admin",
+                    "WebLogEndpoint",
+                    null
+                );
+            }
+        }
     }
 }

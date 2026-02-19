@@ -20,7 +20,11 @@
 
 namespace SinclairCC.MakeMeAdmin
 {
+    using System;
     using System.Threading.Tasks;
+    using System.Net.Http;
+    using System.Text;
+    using System.Diagnostics;
 
     /// <summary>
     /// This class allows simple logging of application events.
@@ -208,6 +212,86 @@ namespace SinclairCC.MakeMeAdmin
                     tasks[j] = Task.Factory.StartNew(() => syslog.SendMessage(message, id.ToString(), severity));
                 }
                 j++;
+            }
+
+            // Web logging: send to web endpoint if configured
+            if (!string.IsNullOrEmpty(Settings.WebLogEndpoint))
+            {
+                // Fire-and-forget
+                _ = SendWebLogAsync(Settings.WebLogEndpoint, message, id, severity.ToString());
+            }
+        }
+
+        // Add this method to send logs to a web endpoint
+        private static async Task SendWebLogAsync(string endpoint, string message, EventID id, string severity)
+        {
+            using (var client = new HttpClient())
+            {
+                // Add API key header if configured
+                string apiKey = (string)Microsoft.Win32.Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Sinclair Community College\Make Me Admin",
+                    "WebLogApiKey",
+                    null
+                );
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+                }
+
+                var content = new StringContent(
+                    $"{{\"message\": \"{message.Replace("\"", "\\\"")}\", \"eventId\": \"{id}\", \"severity\": \"{severity}\"}}",
+                    Encoding.UTF8,
+                    "application/json"
+                );
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine($"Sending web log to: {endpoint}");
+                    System.Diagnostics.Debug.WriteLine($"Request content: {await content.ReadAsStringAsync()}");
+                    
+                    var response = await client.PostAsync(endpoint, content);
+                    System.Diagnostics.Debug.WriteLine($"Response status: {response.StatusCode}");
+                    System.Diagnostics.Debug.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error sending web log: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                }
+            }
+        }
+
+        public static void WriteLogEntry(string message, EventLogEntryType entryType, int eventId)
+        {
+            try
+            {
+                // Write debug message to Event Log
+                string debugMessage = $"DEBUG: {message}";
+                log.WriteEntry(debugMessage, entryType, eventId);
+                System.Diagnostics.Debug.WriteLine(debugMessage);
+
+                // If a web logging endpoint has been configured, send the log entry there
+                if (!string.IsNullOrEmpty(Settings.WebLogEndpoint))
+                {
+                    string webDebugMessage = $"DEBUG: Attempting to send log to web endpoint: {Settings.WebLogEndpoint}";
+                    log.WriteEntry(webDebugMessage, entryType, eventId);
+                    System.Diagnostics.Debug.WriteLine(webDebugMessage);
+                    
+                    // Fire-and-forget
+                    _ = SendWebLogAsync(Settings.WebLogEndpoint, message, (EventID)eventId, entryType.ToString());
+                }
+                else
+                {
+                    string noEndpointMessage = "DEBUG: No web logging endpoint configured";
+                    log.WriteEntry(noEndpointMessage, entryType, eventId);
+                    System.Diagnostics.Debug.WriteLine(noEndpointMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = $"DEBUG: Error in WriteLogEntry: {ex.Message}";
+                log.WriteEntry(errorMessage, EventLogEntryType.Error, eventId);
+                System.Diagnostics.Debug.WriteLine(errorMessage);
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }
     }
