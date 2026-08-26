@@ -61,8 +61,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
 
             Label intro = new Label
             {
-                Dock = DockStyle.Top,
-                Height = 56,
+                AutoSize = true,
                 Padding = new Padding(12, 10, 12, 6),
                 Text = "Leave a field blank (or on “software default”) to omit that setting from the MSI. " +
                        "Filled-in values are written as policy so Intune can install the MSI with no extra command-line arguments."
@@ -71,7 +70,8 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             TabControl tabs = new TabControl
             {
                 Dock = DockStyle.Fill,
-                Padding = new Point(8, 4)
+                Padding = new Point(8, 4),
+                Margin = new Padding(8, 4, 8, 4)
             };
 
             tabs.TabPages.Add(CreateLoggingTab(
@@ -110,46 +110,54 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
                 out this.tcpPortBox,
                 out this.installRemoteUiCheckBox));
 
-            Panel bottom = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 72,
-                Padding = new Padding(12, 10, 12, 12)
-            };
-
             this.createMsiButton = new Button
             {
-                Text = "Create MSI…",
-                Width = 140,
-                Height = 32,
-                Anchor = AnchorStyles.Top | AnchorStyles.Right
+                Text = "Create MSI",
+                Width = 160,
+                Height = 36,
+                Anchor = AnchorStyles.Right,
+                UseVisualStyleBackColor = true
             };
-            this.createMsiButton.Location = new Point(bottom.Width - this.createMsiButton.Width - 12, 20);
-            this.createMsiButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             this.createMsiButton.Click += this.CreateMsiClick;
 
             Label footer = new Label
             {
+                Dock = DockStyle.Fill,
                 AutoSize = false,
-                Width = 620,
-                Height = 48,
-                Location = new Point(12, 12),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Text = "The API key is stored inside the generated MSI. After install it is DPAPI-protected on the device. " +
                        "Anyone who has the MSI file can still extract the key."
             };
 
-            bottom.Controls.Add(footer);
-            bottom.Controls.Add(this.createMsiButton);
-            bottom.Resize += (s, e) =>
+            TableLayoutPanel bottom = new TableLayoutPanel
             {
-                this.createMsiButton.Left = bottom.ClientSize.Width - this.createMsiButton.Width - 12;
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                Padding = new Padding(12, 10, 12, 10)
             };
+            bottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            bottom.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            bottom.Controls.Add(footer, 0, 0);
+            bottom.Controls.Add(this.createMsiButton, 1, 0);
 
-            this.Controls.Add(tabs);
-            this.Controls.Add(bottom);
-            this.Controls.Add(intro);
+            TableLayoutPanel layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                Padding = new Padding(0)
+            };
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64F));
+            intro.Dock = DockStyle.Fill;
+            intro.AutoSize = true;
+            layout.Controls.Add(intro, 0, 0);
+            layout.Controls.Add(tabs, 0, 1);
+            layout.Controls.Add(bottom, 0, 2);
 
+            this.Controls.Add(layout);
             this.AcceptButton = this.createMsiButton;
         }
 
