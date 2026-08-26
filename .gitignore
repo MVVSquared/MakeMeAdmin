@@ -8,6 +8,9 @@
 *.sln.docstates
 .vs/
 
+# Build sidecar copied from Setup; prefer the versioned MSI under Installers/en-us
+/Installers/MakeMeAdmin-template-x64.msi
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

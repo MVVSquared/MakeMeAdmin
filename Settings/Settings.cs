@@ -1222,5 +1222,17 @@ namespace SinclairCC.MakeMeAdmin
                 );
             }
         }
+
+        /// <summary>
+        /// Gets the web log API key from the DPAPI blob, migrating a plaintext
+        /// registry value if one is still present.
+        /// </summary>
+        public static string WebLogApiKey
+        {
+            get
+            {
+                return WebLogApiKeyStore.Unprotect();
+            }
+        }
     }
 }

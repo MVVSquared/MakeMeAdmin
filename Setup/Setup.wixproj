@@ -44,6 +44,14 @@
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\WiXCustomAction\WiXCustomAction.csproj">
+      <Name>WiXCustomAction</Name>
+      <Project>{B84EFDD8-CEA0-4CCA-B7B8-3F8AB3A336B4}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups></RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\Enumerations\Enumerations.csproj">
       <Name>Enumerations</Name>
       <Project>{5fb1809b-b0fd-48e9-9e47-3cb048369433}</Project>
@@ -174,8 +182,15 @@
       <Output TaskParameter="Value" PropertyName="TargetPdbName" />
     </CreateProperty>
   </Target>
-  <PropertyGroup>
-    <PostBuildEvent>if not exist "$(ProjectDir)..\Installers" mkdir "$(ProjectDir)..\Installers"
-xcopy "$(TargetDir)%2a.msi" "$(ProjectDir)..\Installers" /y /e</PostBuildEvent>
-  </PropertyGroup>
+  <Target Name="CopyMsiToInstallers" AfterTargets="AfterBuild">
+    <MakeDir Directories="$(ProjectDir)..\Installers\en-us" />
+    <ItemGroup>
+      <BuiltMsi Include="$(TargetDir)**\*.msi" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BuiltMsi)" DestinationFolder="$(ProjectDir)..\Installers\en-us" SkipUnchangedFiles="true" />
+    <Copy
+      SourceFiles="$(TargetDir)en-US\$(TargetName).msi"
+      DestinationFiles="$(ProjectDir)..\Installers\MakeMeAdmin-template-x64.msi"
+      Condition="'$(Platform)' == 'x64' AND Exists('$(TargetDir)en-US\$(TargetName).msi')" />
+  </Target>
 </Project>

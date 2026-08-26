@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Enumerations", "Enumeration
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WiXCustomAction", "WiXCustomAction\WiXCustomAction.csproj", "{B84EFDD8-CEA0-4CCA-B7B8-3F8AB3A336B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MsiBuilder", "MsiBuilder\MsiBuilder.csproj", "{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -141,6 +143,14 @@ Global
 		{B84EFDD8-CEA0-4CCA-B7B8-3F8AB3A336B4}.Release|x64.Build.0 = Release|x64
 		{B84EFDD8-CEA0-4CCA-B7B8-3F8AB3A336B4}.Release|x86.ActiveCfg = Release|x86
 		{B84EFDD8-CEA0-4CCA-B7B8-3F8AB3A336B4}.Release|x86.Build.0 = Release|x86
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Debug|x64.ActiveCfg = Debug|x64
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Debug|x64.Build.0 = Debug|x64
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Debug|x86.ActiveCfg = Debug|x86
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Debug|x86.Build.0 = Debug|x86
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Release|x64.ActiveCfg = Release|x64
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Release|x64.Build.0 = Release|x64
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Release|x86.ActiveCfg = Release|x86
+		{E7C4A91B-3F28-4D6A-9E51-8B2C4F7A1D03}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

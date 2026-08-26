@@ -15,6 +15,8 @@ try {
     $registryValues = @{
         "WebLogEndpoint" = "your-web-log-endpoint-here"
         "Prompt For Reason" = 2
+        # Prefer passing WEBLOGAPIKEY as an MSI property. If you set this registry
+        # value, the service migrates it into a DPAPI blob and deletes it.
         "WebLogApiKey" = "your-api-key-here"
         "Remove Admin Rights On Logout" = 1
         "Remove Admin Rights On Disconnect" = 1

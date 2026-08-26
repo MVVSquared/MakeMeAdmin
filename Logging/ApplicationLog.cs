@@ -228,11 +228,7 @@ namespace SinclairCC.MakeMeAdmin
             using (var client = new HttpClient())
             {
                 // Add API key header if configured
-                string apiKey = (string)Microsoft.Win32.Registry.GetValue(
-                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Sinclair Community College\Make Me Admin",
-                    "WebLogApiKey",
-                    null
-                );
+                string apiKey = Settings.WebLogApiKey;
                 if (!string.IsNullOrEmpty(apiKey))
                 {
                     client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);

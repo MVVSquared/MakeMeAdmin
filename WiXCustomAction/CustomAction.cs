@@ -21,12 +21,53 @@
 namespace SinclairCC.MakeMeAdmin
 {
     using System;
-    using System.Collections.Generic;
     using System.Text;
     using Microsoft.Deployment.WindowsInstaller;
 
     public class CustomActions
     {
+        /// <summary>
+        /// Copies the WEBLOGAPIKEY property into CustomActionData for the deferred action.
+        /// </summary>
+        [CustomAction]
+        public static ActionResult SetProtectWebLogApiKeyData(Session session)
+        {
+            session.Log("Preparing web log API key for protected storage.");
+            string apiKey = session["WEBLOGAPIKEY"] ?? string.Empty;
+            session["ProtectWebLogApiKey"] = "APIKEY=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(apiKey));
+            return ActionResult.Success;
+        }
+
+        /// <summary>
+        /// DPAPI-protects the web log API key as LocalSystem and writes the blob to disk.
+        /// </summary>
+        [CustomAction]
+        public static ActionResult ProtectWebLogApiKey(Session session)
+        {
+            try
+            {
+                string encoded = session.CustomActionData["APIKEY"];
+                if (string.IsNullOrEmpty(encoded))
+                {
+                    return ActionResult.Success;
+                }
+
+                string apiKey = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    WebLogApiKeyStore.ProtectAndSave(apiKey);
+                }
+            }
+            catch (Exception e)
+            {
+                session.Log("Failed to store the web log API key.");
+                session.Log(e.Message);
+                return ActionResult.Failure;
+            }
+
+            return ActionResult.Success;
+        }
+
         [CustomAction]
         public static ActionResult RemoveUserList(Session session)
         {
@@ -55,6 +96,16 @@ namespace SinclairCC.MakeMeAdmin
                     session.Log(string.Format("{0:N0} tries remaining.", tries));
                     System.Threading.Thread.Sleep(sleepTime);
                 }
+            }
+
+            try
+            {
+                WebLogApiKeyStore.RemoveBlob();
+            }
+            catch (Exception e)
+            {
+                session.Log("Error while trying to remove the web log API key blob.");
+                session.Log(e.Message);
             }
 
             // TODO: i18n

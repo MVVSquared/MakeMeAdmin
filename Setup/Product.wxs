@@ -1,10 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <Product Id="*" Name="!(loc.SoftwareName)" Language="!(loc.LANG)" Version="2.3.82" Manufacturer="!(loc.SoftwareManufacturer)" UpgradeCode="9c690479-3987-48a8-8bda-118ef1f93cdd">
+  <Product Id="*" Name="!(loc.SoftwareName)" Language="!(loc.LANG)" Version="2.3.83" Manufacturer="!(loc.SoftwareManufacturer)" UpgradeCode="9c690479-3987-48a8-8bda-118ef1f93cdd">
     <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine" />
     <Condition Message="!(loc.AdminRightsRequired)">Privileged</Condition>
     <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionInstalled)" />
     <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="WEBLOGENDPOINT" Secure="yes" />
+    <Property Id="WEBLOGAPIKEY" Hidden="yes" Secure="yes" />
+    <Property Id="PROMPTFORREASON" Secure="yes" />
+    <Property Id="REMOVEADMINRIGHTSONLOGOUT" Secure="yes" />
+    <Property Id="ALLOWEDENTITIES" Secure="yes" />
+    <Property Id="DENIEDENTITIES" Secure="yes" />
+    <Property Id="AUTOMATICADDALLOWED" Secure="yes" />
+    <Property Id="AUTOMATICADDDENIED" Secure="yes" />
+    <Property Id="REMOTEALLOWEDENTITIES" Secure="yes" />
+    <Property Id="REMOTEDENIEDENTITIES" Secure="yes" />
+    <Property Id="ADMINRIGHTSTIMEOUT" Secure="yes" />
+    <Property Id="RENEWALSALLOWED" Secure="yes" />
+    <Property Id="OVERRIDEREMOVALBYOUTSIDEPROCESS" Secure="yes" />
+    <Property Id="REQUIREAUTHENTICATIONFORPRIVILEGES" Secure="yes" />
+    <Property Id="ALLOWREMOTEREQUESTS" Secure="yes" />
+    <Property Id="ENDREMOTESESSIONSUPONEXPIRATION" Secure="yes" />
+    <Property Id="CLOSEAPPLICATIONUPONEXPIRATION" Secure="yes" />
+    <Property Id="ALLOWFREEFORMREASON" Secure="yes" />
+    <Property Id="CANNEDREASONS" Secure="yes" />
+    <Property Id="LOGELEVATEDPROCESSES" Secure="yes" />
+    <Property Id="MAXIMUMREASONLENGTH" Secure="yes" />
+    <Property Id="LOGOFFAFTEREXPIRATION" Secure="yes" />
+    <Property Id="LOGOFFMESSAGE" Secure="yes" />
+    <Property Id="TCPSERVICEPORT" Secure="yes" />
+    <Property Id="INSTALLREMOTE" Secure="yes" />
+
+    <Binary Id="WiXCustomActionDll" SourceFile="$(var.WiXCustomAction.TargetDir)$(var.WiXCustomAction.TargetName).CA.dll" />
+    <CustomAction Id="SetProtectWebLogApiKeyData" BinaryKey="WiXCustomActionDll" DllEntry="SetProtectWebLogApiKeyData" Execute="immediate" Return="check" />
+    <CustomAction Id="ProtectWebLogApiKey" BinaryKey="WiXCustomActionDll" DllEntry="ProtectWebLogApiKey" Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="RemoveUserList" BinaryKey="WiXCustomActionDll" DllEntry="RemoveUserList" Execute="deferred" Impersonate="no" Return="ignore" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetProtectWebLogApiKeyData" After="InstallFiles">WEBLOGAPIKEY AND NOT REMOVE</Custom>
+      <Custom Action="ProtectWebLogApiKey" After="SetProtectWebLogApiKeyData">WEBLOGAPIKEY AND NOT REMOVE</Custom>
+      <Custom Action="RemoveUserList" After="StopServices">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
 
 	<Feature Id="MakeMeAdmin" Title="[ProductName]" Level="1">
       <ComponentRef Id="ADMXFiles" />
@@ -33,6 +70,30 @@
       <ComponentRef Id="ProcessCommunicationLibrary" />
       <ComponentRef Id="ProcessCommunicationLibrary_da" />
       <ComponentRef Id="ProcessCommunicationLibrary_fr" />
+      <ComponentRef Id="PolicyWebLogEndpoint" />
+      <ComponentRef Id="PolicyPromptForReason" />
+      <ComponentRef Id="PolicyRemoveAdminRightsOnLogout" />
+      <ComponentRef Id="PolicyAllowedEntities" />
+      <ComponentRef Id="PolicyDeniedEntities" />
+      <ComponentRef Id="PolicyAutomaticAddAllowed" />
+      <ComponentRef Id="PolicyAutomaticAddDenied" />
+      <ComponentRef Id="PolicyRemoteAllowedEntities" />
+      <ComponentRef Id="PolicyRemoteDeniedEntities" />
+      <ComponentRef Id="PolicyAdminRightsTimeout" />
+      <ComponentRef Id="PolicyRenewalsAllowed" />
+      <ComponentRef Id="PolicyOverrideRemovalByOutsideProcess" />
+      <ComponentRef Id="PolicyRequireAuthenticationForPrivileges" />
+      <ComponentRef Id="PolicyAllowRemoteRequests" />
+      <ComponentRef Id="PolicyEndRemoteSessionsUponExpiration" />
+      <ComponentRef Id="PolicyCloseApplicationUponExpiration" />
+      <ComponentRef Id="PolicyAllowFreeFormReason" />
+      <ComponentRef Id="PolicyCannedReasons" />
+      <ComponentRef Id="PolicyLogElevatedProcesses" />
+      <ComponentRef Id="PolicyMaximumReasonLength" />
+      <ComponentRef Id="PolicyLogOffAfterExpiration" />
+      <ComponentRef Id="PolicyLogOffMessage" />
+      <ComponentRef Id="PolicyTcpServicePort" />
+      <ComponentRef Id="WebLogApiKeyCleanup" />
       
       <Condition Level="0">INSTALLMAKEMEADMIN = "0"</Condition>
     </Feature>
@@ -215,6 +276,108 @@
       </Directory>
       
       <Directory Id="ProgramMenuFolder" Name="Programs" />
+
+      <Directory Id="CommonAppDataFolder" Name="CommonAppData">
+        <Directory Id="MakeMeAdminAppDataFolder" Name="Make Me Admin">
+          <Component Id="WebLogApiKeyCleanup" Guid="5F1D8C3A-7B26-4E90-81A4-C3D9E6B70215">
+            <CreateFolder />
+            <RegistryValue Root="HKLM" Key="Software\Sinclair Community College\Make Me Admin" Name="AppDataFolder" Type="string" Value="[MakeMeAdminAppDataFolder]" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+
+      <Component Id="PolicyWebLogEndpoint" Guid="7E4C1A2B-9F33-4D8A-B6C1-E2A9F04D1B10">
+        <Condition>WEBLOGENDPOINT</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="WebLogEndpoint" Type="string" Value="[WEBLOGENDPOINT]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyPromptForReason" Guid="3C8E2F71-5A44-4B19-9D6E-8C1B7A2E4F01">
+        <Condition>PROMPTFORREASON &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Prompt For Reason" Type="integer" Value="[PROMPTFORREASON]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyRemoveAdminRightsOnLogout" Guid="9A6D4B18-2C70-4E5F-A3D1-6B8E9C0F2A44">
+        <Condition>REMOVEADMINRIGHTSONLOGOUT &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Remove Admin Rights On Logout" Type="integer" Value="[REMOVEADMINRIGHTSONLOGOUT]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAllowedEntities" Guid="4B7E1C90-2D3A-4F18-9C6B-A1E8D5F02471">
+        <Condition>ALLOWEDENTITIES</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Allowed Entities" Type="multiString" Value="[ALLOWEDENTITIES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyDeniedEntities" Guid="8F3A62D1-7C45-4B90-A2E6-1D9C4B7083E2">
+        <Condition>DENIEDENTITIES</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Denied Entities" Type="multiString" Value="[DENIEDENTITIES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAutomaticAddAllowed" Guid="C1D8A047-5E2B-4F91-8A36-7B0E4C19D5A3">
+        <Condition>AUTOMATICADDALLOWED</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Automatic Add Allowed" Type="multiString" Value="[AUTOMATICADDALLOWED]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAutomaticAddDenied" Guid="2E9F6B18-4A70-4C3D-9E51-8F2A1B6C7D04">
+        <Condition>AUTOMATICADDDENIED</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Automatic Add Denied" Type="multiString" Value="[AUTOMATICADDDENIED]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyRemoteAllowedEntities" Guid="6A4C91E2-8B3F-4D17-A0C5-3E9D2F18B746">
+        <Condition>REMOTEALLOWEDENTITIES</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Remote Allowed Entities" Type="multiString" Value="[REMOTEALLOWEDENTITIES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyRemoteDeniedEntities" Guid="9D2E5A71-1C48-4B6F-8E03-5A7C9D1E2F60">
+        <Condition>REMOTEDENIEDENTITIES</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Remote Denied Entities" Type="multiString" Value="[REMOTEDENIEDENTITIES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAdminRightsTimeout" Guid="3F18B6A0-7D2C-4E91-A5B4-2C8E1D9F0735">
+        <Condition>ADMINRIGHTSTIMEOUT &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Admin Rights Timeout" Type="integer" Value="[ADMINRIGHTSTIMEOUT]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyRenewalsAllowed" Guid="5C7A2E19-4B8D-4F06-9C31-A6E8D2B4F017">
+        <Condition>RENEWALSALLOWED &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Renewals Allowed" Type="integer" Value="[RENEWALSALLOWED]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyOverrideRemovalByOutsideProcess" Guid="7E1D4C82-9A35-4B70-8F26-1C4E9A7B3D50">
+        <Condition>OVERRIDEREMOVALBYOUTSIDEPROCESS &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Override Removal By Outside Process" Type="integer" Value="[OVERRIDEREMOVALBYOUTSIDEPROCESS]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyRequireAuthenticationForPrivileges" Guid="B8A3F061-2E47-4C19-9D85-6F1A3C8E2B74">
+        <Condition>REQUIREAUTHENTICATIONFORPRIVILEGES &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Require Authentication For Privileges" Type="integer" Value="[REQUIREAUTHENTICATIONFORPRIVILEGES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAllowRemoteRequests" Guid="1D9C6E42-8F70-4A35-B2C1-7E4D9A0F3168">
+        <Condition>ALLOWREMOTEREQUESTS &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Allow Remote Requests" Type="integer" Value="[ALLOWREMOTEREQUESTS]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyEndRemoteSessionsUponExpiration" Guid="A4E7B190-3C5D-4F82-9E16-8B2A4D7C1F05">
+        <Condition>ENDREMOTESESSIONSUPONEXPIRATION &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="End Remote Sessions Upon Expiration" Type="integer" Value="[ENDREMOTESESSIONSUPONEXPIRATION]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyCloseApplicationUponExpiration" Guid="2C8F1A59-6D40-4E73-A9B2-5C7E1D8F4A36">
+        <Condition>CLOSEAPPLICATIONUPONEXPIRATION &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Close Application Upon Expiration" Type="integer" Value="[CLOSEAPPLICATIONUPONEXPIRATION]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAllowFreeFormReason" Guid="8B5D2E70-1A94-4C36-9F08-3E7A6B1D2C45">
+        <Condition>ALLOWFREEFORMREASON &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Allow Free-Form Reason" Type="integer" Value="[ALLOWFREEFORMREASON]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyCannedReasons" Guid="6F1C9A83-4E27-4B50-8D16-A2E9C7F3B018">
+        <Condition>CANNEDREASONS</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Canned Reasons" Type="multiString" Value="[CANNEDREASONS]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyLogElevatedProcesses" Guid="D3A8E471-5B29-4F60-9C14-7A2E1D8B6F30">
+        <Condition>LOGELEVATEDPROCESSES &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Log Elevated Processes" Type="integer" Value="[LOGELEVATEDPROCESSES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyMaximumReasonLength" Guid="4E9B2C17-8A60-4D35-B1F8-6C3A7E0D1924">
+        <Condition>MAXIMUMREASONLENGTH &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Maximum Reason Length" Type="integer" Value="[MAXIMUMREASONLENGTH]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyLogOffAfterExpiration" Guid="9A1F6D28-3C47-4E90-A5B3-2D8E7C1F4B06">
+        <Condition>LOGOFFAFTEREXPIRATION &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Log Off After Expiration" Type="integer" Value="[LOGOFFAFTEREXPIRATION]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyLogOffMessage" Guid="5B8E3A12-7D46-4C91-8E20-1F9A4B6D3C75">
+        <Condition>LOGOFFMESSAGE</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Log Off Message" Type="multiString" Value="[LOGOFFMESSAGE]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyTcpServicePort" Guid="7C2A4F81-9E35-4B16-A0D7-8E1C5B9F2A43">
+        <Condition>TCPSERVICEPORT &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="TCP Service Port" Type="integer" Value="[TCPSERVICEPORT]" KeyPath="yes" />
+      </Component>
     </Directory>
   </Product>
 </Wix>

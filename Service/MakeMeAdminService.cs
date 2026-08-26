@@ -506,6 +506,14 @@ namespace SinclairCC.MakeMeAdmin
             // Create the Windows Event Log source for this application.
             ApplicationLog.CreateSource();
 
+            try
+            {
+                WebLogApiKeyStore.TryMigrateFromRegistry();
+            }
+            catch (Exception)
+            {
+            }
+
             // Open the service host which is accessible via named pipes.
             this.OpenNamedPipeServiceHost();
 
