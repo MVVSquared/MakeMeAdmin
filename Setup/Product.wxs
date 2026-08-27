@@ -8,6 +8,7 @@
 
     <Property Id="WEBLOGENDPOINT" Secure="yes" />
     <Property Id="WEBLOGAPIKEY" Hidden="yes" Secure="yes" />
+    <Property Id="SYSLOGSERVERS" Secure="yes" />
     <Property Id="PROMPTFORREASON" Secure="yes" />
     <Property Id="REMOVEADMINRIGHTSONLOGOUT" Secure="yes" />
     <Property Id="ALLOWEDENTITIES" Secure="yes" />
@@ -71,6 +72,7 @@
       <ComponentRef Id="ProcessCommunicationLibrary_da" />
       <ComponentRef Id="ProcessCommunicationLibrary_fr" />
       <ComponentRef Id="PolicyWebLogEndpoint" />
+      <ComponentRef Id="PolicySyslogServers" />
       <ComponentRef Id="PolicyPromptForReason" />
       <ComponentRef Id="PolicyRemoveAdminRightsOnLogout" />
       <ComponentRef Id="PolicyAllowedEntities" />
@@ -289,6 +291,10 @@
       <Component Id="PolicyWebLogEndpoint" Guid="7E4C1A2B-9F33-4D8A-B6C1-E2A9F04D1B10">
         <Condition>WEBLOGENDPOINT</Condition>
         <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="WebLogEndpoint" Type="string" Value="[WEBLOGENDPOINT]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicySyslogServers" Guid="A6C8D12F-4E70-4B39-9A15-8D2F1C7E3B64">
+        <Condition>SYSLOGSERVERS</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="syslog servers" Type="multiString" Value="[SYSLOGSERVERS]" KeyPath="yes" />
       </Component>
       <Component Id="PolicyPromptForReason" Guid="3C8E2F71-5A44-4B19-9D6E-8C1B7A2E4F01">
         <Condition>PROMPTFORREASON &lt;&gt; ""</Condition>

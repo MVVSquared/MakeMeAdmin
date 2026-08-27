@@ -20,6 +20,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
         private readonly TextBox webLogEndpointBox;
         private readonly TextBox apiKeyBox;
         private readonly CheckBox showApiKeyCheckBox;
+        private readonly TextBox syslogServersBox;
         private readonly ComboBox logElevatedCombo;
 
         private readonly TextBox allowedEntitiesBox;
@@ -78,6 +79,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
                 out this.webLogEndpointBox,
                 out this.apiKeyBox,
                 out this.showApiKeyCheckBox,
+                out this.syslogServersBox,
                 out this.logElevatedCombo));
 
             tabs.TabPages.Add(CreateAuthorizationTab(
@@ -251,6 +253,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
 
             AddIfNotEmpty(properties, "WEBLOGENDPOINT", this.webLogEndpointBox.Text.Trim());
             AddIfNotEmpty(properties, "WEBLOGAPIKEY", this.apiKeyBox.Text.Trim());
+            AddIfNotEmpty(properties, "SYSLOGSERVERS", JoinMultiString(this.syslogServersBox.Text));
             AddIfNotEmpty(properties, "LOGELEVATEDPROCESSES", SelectedNumericCombo(this.logElevatedCombo));
 
             AddIfNotEmpty(properties, "ALLOWEDENTITIES", JoinMultiString(this.allowedEntitiesBox.Text));
@@ -356,9 +359,15 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             return option.Value;
         }
 
-        private static TabPage CreateLoggingTab(out TextBox endpointBox, out TextBox apiKeyBox, out CheckBox showKey, out ComboBox logElevated)
+        private static TabPage CreateLoggingTab(out TextBox endpointBox, out TextBox apiKeyBox, out CheckBox showKey, out TextBox syslogServers, out ComboBox logElevated)
         {
             FlowLayoutPanel panel = CreateScrollPanel();
+            AddNote(panel, "Use syslog, web logging, or both. Leave a section blank to disable that destination.");
+
+            AddHeading(panel, "Syslog");
+            AddNote(panel, "One server per line, in the form host:port:protocol:RFC. Protocol is tcp or udp. RFC is 3164 or 5424. Examples: syslog.example.edu   syslog.example.edu:514:udp   syslog.example.edu:1468:tcp:5424");
+            syslogServers = AddMultiline(panel, "Syslog servers", 4);
+
             AddHeading(panel, "Web logging");
             AddNote(panel, "HTTPS URL that receives JSON log POSTs. Omit both fields to disable web logging.");
             endpointBox = AddTextBox(panel, "Web log endpoint (for example https://logs.example.edu/ingest)");

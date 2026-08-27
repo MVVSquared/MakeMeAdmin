@@ -27,6 +27,7 @@ WEBLOGENDPOINT="https://logs.example.wsu.edu/ingest" WEBLOGAPIKEY="your-api-key-
 |----------|--------------------|--------|
 | **WEBLOGENDPOINT** | `WebLogEndpoint` (`REG_SZ`) | HTTPS URL for log POST. Omit to disable web logging. |
 | **WEBLOGAPIKEY** | DPAPI blob under ProgramData | Hidden/secure MSI property. Do not put this in Settings Catalog. |
+| **SYSLOGSERVERS** | `syslog servers` (`REG_MULTI_SZ`) | One `host:port:protocol:RFC` entry per line. Omit to disable syslog. Can be used with or instead of web logging. |
 | **PROMPTFORREASON** | `Prompt For Reason` (`REG_DWORD`) | 0 = None, 1 = Optional, 2 = Required. |
 | **REMOVEADMINRIGHTSONLOGOUT** | `Remove Admin Rights On Logout` (`REG_DWORD`) | 0 or 1. |
 
