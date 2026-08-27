@@ -71,18 +71,15 @@
     <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\Installers\MakeMeAdmin-template-x64.msi" Condition="Exists('$(MSBuildProjectDirectory)\..\Installers\MakeMeAdmin-template-x64.msi')">
-      <LogicalName>MakeMeAdmin.msi</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="..\Installers\en-us\MakeMeAdmin 2.3.83 x64.msi" Condition="!Exists('$(MSBuildProjectDirectory)\..\Installers\MakeMeAdmin-template-x64.msi') And Exists('$(MSBuildProjectDirectory)\..\Installers\en-us\MakeMeAdmin 2.3.83 x64.msi')">
+    <EmbeddedResource Include="..\Installers\MakeMeAdmin-template-x64.msi">
       <LogicalName>MakeMeAdmin.msi</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureTemplateMsi" BeforeTargets="BeforeBuild">
     <Error
-      Condition="!Exists('$(MSBuildProjectDirectory)\..\Installers\en-us\MakeMeAdmin 2.3.83 x64.msi') And !Exists('$(MSBuildProjectDirectory)\..\Installers\MakeMeAdmin-template-x64.msi')"
-      Text="No template MSI was found. Build the Setup project (Release | x64) first, or place MakeMeAdmin 2.3.83 x64.msi in Installers\en-us." />
+      Condition="!Exists('$(MSBuildProjectDirectory)\..\Installers\MakeMeAdmin-template-x64.msi')"
+      Text="No template MSI was found at Installers\MakeMeAdmin-template-x64.msi. Build the Setup project (Release | x64) first so MsiBuilder embeds a current installer." />
   </Target>
   <PropertyGroup>
     <PostBuildEvent>if not exist "$(ProjectDir)..\Installers" mkdir "$(ProjectDir)..\Installers"

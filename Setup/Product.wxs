@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <Product Id="*" Name="!(loc.SoftwareName)" Language="!(loc.LANG)" Version="2.3.83" Manufacturer="!(loc.SoftwareManufacturer)" UpgradeCode="9c690479-3987-48a8-8bda-118ef1f93cdd">
+  <Product Id="*" Name="!(loc.SoftwareName)" Language="!(loc.LANG)" Version="2.3.84" Manufacturer="!(loc.SoftwareManufacturer)" UpgradeCode="9c690479-3987-48a8-8bda-118ef1f93cdd">
     <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine" />
     <Condition Message="!(loc.AdminRightsRequired)">Privileged</Condition>
     <MajorUpgrade DowngradeErrorMessage="!(loc.NewerVersionInstalled)" />
@@ -13,6 +13,7 @@
     <Property Id="REMOVEADMINRIGHTSONLOGOUT" Secure="yes" />
     <Property Id="ALLOWEDENTITIES" Secure="yes" />
     <Property Id="DENIEDENTITIES" Secure="yes" />
+    <Property Id="ALLOWENROLLEDUSER" Secure="yes" />
     <Property Id="AUTOMATICADDALLOWED" Secure="yes" />
     <Property Id="AUTOMATICADDDENIED" Secure="yes" />
     <Property Id="REMOTEALLOWEDENTITIES" Secure="yes" />
@@ -77,6 +78,7 @@
       <ComponentRef Id="PolicyRemoveAdminRightsOnLogout" />
       <ComponentRef Id="PolicyAllowedEntities" />
       <ComponentRef Id="PolicyDeniedEntities" />
+      <ComponentRef Id="PolicyAllowEnrolledUser" />
       <ComponentRef Id="PolicyAutomaticAddAllowed" />
       <ComponentRef Id="PolicyAutomaticAddDenied" />
       <ComponentRef Id="PolicyRemoteAllowedEntities" />
@@ -311,6 +313,10 @@
       <Component Id="PolicyDeniedEntities" Guid="8F3A62D1-7C45-4B90-A2E6-1D9C4B7083E2">
         <Condition>DENIEDENTITIES</Condition>
         <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Denied Entities" Type="multiString" Value="[DENIEDENTITIES]" KeyPath="yes" />
+      </Component>
+      <Component Id="PolicyAllowEnrolledUser" Guid="0E7A4C91-6B28-4D15-A8F3-9C1E5B7D2A60">
+        <Condition>ALLOWENROLLEDUSER &lt;&gt; ""</Condition>
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin" Name="Allow Enrolled User" Type="integer" Value="[ALLOWENROLLEDUSER]" KeyPath="yes" />
       </Component>
       <Component Id="PolicyAutomaticAddAllowed" Guid="C1D8A047-5E2B-4F91-8A36-7B0E4C19D5A3">
         <Condition>AUTOMATICADDALLOWED</Condition>

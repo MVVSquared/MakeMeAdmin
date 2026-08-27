@@ -180,12 +180,28 @@ namespace SinclairCC.MakeMeAdmin
             // TODO: Only do this if the user is not a member of the group?
 
             AdminGroupManipulator adminGroupManipulator = new AdminGroupManipulator();
-            bool userIsAuthorized = adminGroupManipulator.UserIsAuthorized(userIdentity, Settings.LocalAllowedEntities, Settings.LocalDeniedEntities);
+            bool userIsAuthorized = adminGroupManipulator.UserIsAllowedToRequestLocalAdministratorRights(userIdentity);
 
             if (!string.IsNullOrEmpty(remoteAddress))
             { // Request is from a remote computer. Check the remote authorization list.
                 userIsAuthorized &= adminGroupManipulator.UserIsAuthorized(userIdentity, Settings.RemoteAllowedEntities, Settings.RemoteDeniedEntities);
             }
+
+            string enrolledUpn = EnrolledDeviceUser.GetEnrolledUserPrincipalName();
+            bool allowedListConfigured = Settings.LocalAllowedEntities != null;
+            ApplicationLog.WriteEvent(
+                string.Format(
+                    "Administrator rights request from {0}. AllowEnrolledUser={1}, enrolled UPN={2}, caller is enrolled user={3}, allowed-list configured={4}, authorized={5}.",
+                    userIdentity != null ? userIdentity.Name : "(null)",
+                    Settings.AllowEnrolledUser,
+                    string.IsNullOrEmpty(enrolledUpn) ? "(none)" : enrolledUpn,
+                    EnrolledDeviceUser.Matches(userIdentity),
+                    allowedListConfigured,
+                    userIsAuthorized),
+                EventID.DebugMessage,
+                (!Settings.AllowEnrolledUser && !allowedListConfigured && userIsAuthorized)
+                    ? System.Diagnostics.EventLogEntryType.Warning
+                    : System.Diagnostics.EventLogEntryType.Information);
 
             if (
                 (!string.IsNullOrEmpty(LocalAdminGroupName)) &&

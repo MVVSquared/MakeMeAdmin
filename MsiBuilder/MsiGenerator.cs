@@ -22,6 +22,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
     {
         internal const string EmbeddedResourceName = "MakeMeAdmin.msi";
 
+        private const int MsiOpenDatabaseModeReadOnly = 0;
         private const int MsiOpenDatabaseModeTransact = 1;
         private static readonly Regex PropertyNamePattern = new Regex(@"^[A-Z][A-Z0-9_]*$", RegexOptions.Compiled);
 
@@ -33,6 +34,18 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             }
 
             ExtractTemplate(destinationPath);
+
+            if (properties != null && properties.ContainsKey("ALLOWENROLLEDUSER"))
+            {
+                if (!RegistryValueExists(destinationPath, "Allow Enrolled User"))
+                {
+                    throw new InvalidOperationException(
+                        "This builder's template MSI does not include the Allow Enrolled User policy. " +
+                        "Build Setup (Release | x64) first, then rebuild MsiBuilder, and run the new MakeMeAdminMsiBuilder.exe from Installers. " +
+                        "Installing an older template leaves Allowed Entities unset, which still means everyone is allowed.");
+                }
+            }
+
             ApplyProperties(destinationPath, properties ?? new Dictionary<string, string>());
         }
 
@@ -91,6 +104,59 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             }
             finally
             {
+                ReleaseComObject(database);
+                ReleaseComObject(installer);
+            }
+        }
+
+        private static bool RegistryValueExists(string msiPath, string valueName)
+        {
+            Type installerType = Type.GetTypeFromProgID("WindowsInstaller.Installer");
+            if (installerType == null)
+            {
+                throw new InvalidOperationException("Windows Installer is not available on this computer.");
+            }
+
+            object installer = Activator.CreateInstance(installerType);
+            object database = installerType.InvokeMember(
+                "OpenDatabase",
+                BindingFlags.InvokeMethod,
+                null,
+                installer,
+                new object[] { msiPath, MsiOpenDatabaseModeReadOnly });
+
+            object view = null;
+            try
+            {
+                string sql = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "SELECT `Name` FROM `Registry` WHERE `Name`='{0}'",
+                    EscapeSql(valueName));
+                view = database.GetType().InvokeMember(
+                    "OpenView",
+                    BindingFlags.InvokeMethod,
+                    null,
+                    database,
+                    new object[] { sql });
+                view.GetType().InvokeMember("Execute", BindingFlags.InvokeMethod, null, view, new object[] { null });
+                object record = view.GetType().InvokeMember("Fetch", BindingFlags.InvokeMethod, null, view, null);
+                return record != null;
+            }
+            finally
+            {
+                if (view != null)
+                {
+                    try
+                    {
+                        view.GetType().InvokeMember("Close", BindingFlags.InvokeMethod, null, view, null);
+                    }
+                    catch (Exception)
+                    {
+                    }
+
+                    ReleaseComObject(view);
+                }
+
                 ReleaseComObject(database);
                 ReleaseComObject(installer);
             }

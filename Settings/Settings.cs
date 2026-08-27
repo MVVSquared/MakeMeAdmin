@@ -520,6 +520,32 @@ namespace SinclairCC.MakeMeAdmin
         }
 
         // TODO: i18n.
+        public static bool AllowEnrolledUser
+        {
+            get
+            {
+                int? policySetting = GetDWord(PolicyRegistryKeyPath, null, "Allow Enrolled User");
+                int? preferenceSetting = GetDWord(PreferenceRegistryKeyPath, null, "Allow Enrolled User");
+                if (policySetting.HasValue)
+                {
+                    return Convert.ToBoolean(policySetting.Value);
+                }
+                else if (preferenceSetting.HasValue)
+                {
+                    return Convert.ToBoolean(preferenceSetting.Value);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            set
+            {
+                SetDWord(PreferenceRegistryKeyPath, null, "Allow Enrolled User", Convert.ToInt32(value));
+            }
+        }
+
+        // TODO: i18n.
         public static bool AllowRemoteRequests
         {
             get

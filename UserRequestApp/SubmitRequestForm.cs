@@ -498,7 +498,7 @@ namespace SinclairCC.MakeMeAdmin
         private void ButtonStateWorkCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             AdminGroupManipulator adminGroupManipulator = new AdminGroupManipulator();
-            bool userIsAuthorizedLocally = adminGroupManipulator.UserIsAuthorized(WindowsIdentity.GetCurrent(), Settings.LocalAllowedEntities, Settings.LocalDeniedEntities);
+            bool userIsAuthorizedLocally = adminGroupManipulator.UserIsAllowedToRequestLocalAdministratorRights(WindowsIdentity.GetCurrent());
 
             /*
             NetNamedPipeBinding binding = new NetNamedPipeBinding(NetNamedPipeSecurityMode.Transport);

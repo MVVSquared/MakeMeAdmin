@@ -25,6 +25,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
 
         private readonly TextBox allowedEntitiesBox;
         private readonly TextBox deniedEntitiesBox;
+        private readonly CheckBox allowEnrolledUserCheckBox;
         private readonly TextBox automaticAddAllowedBox;
         private readonly TextBox automaticAddDeniedBox;
 
@@ -85,6 +86,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             tabs.TabPages.Add(CreateAuthorizationTab(
                 out this.allowedEntitiesBox,
                 out this.deniedEntitiesBox,
+                out this.allowEnrolledUserCheckBox,
                 out this.automaticAddAllowedBox,
                 out this.automaticAddDeniedBox));
 
@@ -258,6 +260,10 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
 
             AddIfNotEmpty(properties, "ALLOWEDENTITIES", JoinMultiString(this.allowedEntitiesBox.Text));
             AddIfNotEmpty(properties, "DENIEDENTITIES", JoinMultiString(this.deniedEntitiesBox.Text));
+            if (this.allowEnrolledUserCheckBox.Checked)
+            {
+                properties["ALLOWENROLLEDUSER"] = "1";
+            }
             AddIfNotEmpty(properties, "AUTOMATICADDALLOWED", JoinMultiString(this.automaticAddAllowedBox.Text));
             AddIfNotEmpty(properties, "AUTOMATICADDDENIED", JoinMultiString(this.automaticAddDeniedBox.Text));
 
@@ -392,12 +398,22 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             return WrapTab("Logging", panel);
         }
 
-        private static TabPage CreateAuthorizationTab(out TextBox allowed, out TextBox denied, out TextBox autoAllowed, out TextBox autoDenied)
+        private static TabPage CreateAuthorizationTab(out TextBox allowed, out TextBox denied, out CheckBox allowEnrolledUser, out TextBox autoAllowed, out TextBox autoDenied)
         {
             FlowLayoutPanel panel = CreateScrollPanel();
-            AddNote(panel, "One SID or name per line (for example DOMAIN\\HelpDesk or S-1-5-32-545). Denied entries take precedence. An empty allowed list in policy means nobody is allowed; leaving these boxes empty leaves the software default (everyone allowed).");
+            AddNote(panel, "One SID or name per line (for example DOMAIN\\HelpDesk or AzureAD\\user@wsu.edu). Denied entries take precedence.");
+            AddNote(panel, "Labs: leave the enrolled-user box unchecked and list lab or IT accounts in Allowed entities. Individual Entra-joined PCs: check the box so the person who enrolled the device can request admin, and optionally still list IT staff in Allowed entities.");
+            AddNote(panel, "An empty allowed list with the enrolled-user box checked allows only the enrollee. Leaving both empty (and the box unchecked) leaves the software default (everyone allowed).");
             allowed = AddMultiline(panel, "Allowed entities", 5);
             denied = AddMultiline(panel, "Denied entities", 4);
+            allowEnrolledUser = new CheckBox
+            {
+                Text = "Automatically allow the Entra / Intune user who enrolled this device",
+                AutoSize = true,
+                Margin = new Padding(0, 4, 0, 12)
+            };
+            panel.Controls.Add(allowEnrolledUser);
+            AddNote(panel, "The service reads the enrolled UPN from this PC (CloudDomainJoin JoinInfo). It does not call Intune. This is not the same as “automatically add at logon,” which puts people in Administrators without them clicking Grant.");
             autoAllowed = AddMultiline(panel, "Automatically add at logon (allowed)", 4);
             autoDenied = AddMultiline(panel, "Automatically add at logon (denied)", 3);
             return WrapTab("Authorization", panel);

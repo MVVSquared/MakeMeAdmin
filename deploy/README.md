@@ -29,6 +29,7 @@ WEBLOGENDPOINT="https://logs.example.wsu.edu/ingest" WEBLOGAPIKEY="your-api-key-
 | **WEBLOGAPIKEY** | DPAPI blob under ProgramData | Hidden/secure MSI property. Do not put this in Settings Catalog. |
 | **SYSLOGSERVERS** | `syslog servers` (`REG_MULTI_SZ`) | One `host:port:protocol:RFC` entry per line. Omit to disable syslog. Can be used with or instead of web logging. |
 | **PROMPTFORREASON** | `Prompt For Reason` (`REG_DWORD`) | 0 = None, 1 = Optional, 2 = Required. |
+| **ALLOWENROLLEDUSER** | `Allow Enrolled User` (`REG_DWORD`) | 1 = the Entra/Intune enrollee of this PC may request admin, plus anyone in Allowed Entities. |
 | **REMOVEADMINRIGHTSONLOGOUT** | `Remove Admin Rights On Logout` (`REG_DWORD`) | 0 or 1. |
 
 The key still exists in the Intune command-line field (Intune admins can see it) and inside the cached MSI property table. After install, on the device, standard users cannot decrypt the blob.
@@ -61,6 +62,7 @@ You can add these to the script if needed:
 | Setting | Type | Description |
 |---------|------|-------------|
 | **Allowed Entities** | `REG_MULTI_SZ` | SIDs or names (e.g., `DOMAIN\GroupName`) of users/groups allowed to obtain admin rights. |
+| **Allow Enrolled User** | `REG_DWORD` | When **1**, the Entra/Intune user who enrolled the device may request admin rights (in addition to Allowed Entities). |
 | **Denied Entities** | `REG_MULTI_SZ` | SIDs or names of users/groups denied admin rights (takes precedence over Allowed). |
 | **Admin Rights Timeout** | `REG_DWORD` | Default minutes the user remains in the Administrators group (default: 10). |
 | **Renewals Allowed** | `REG_DWORD` | Number of times a user can renew their admin rights (default: 0). |

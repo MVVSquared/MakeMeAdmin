@@ -73,6 +73,22 @@
 			</elements>
 		</policy>
 
+		<policy name="AllowEnrolledUser"
+				 class="Machine"
+				 displayName="$(string.AllowEnrolledUserDisplayName)"
+				 explainText="$(string.AllowEnrolledUserExplainText)"
+				 key="SOFTWARE\Policies\Sinclair Community College\Make Me Admin"
+				 valueName="Allow Enrolled User">
+			<parentCategory ref="makemeadmin:MakeMeAdmin"></parentCategory>
+			<supportedOn ref="windows:SUPPORTED_Windows7" />
+			<enabledValue>
+				<decimal value="1" />
+			</enabledValue>
+			<disabledValue>
+				<delete />
+			</disabledValue>
+		</policy>
+
 		<policy name="RemoteDeniedEntities"
 				 class="Machine"
 				 displayName="$(string.RemoteDeniedEntitiesDisplayName)"

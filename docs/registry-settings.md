@@ -12,6 +12,7 @@ To enforce settings, you should use the Group Policy templates, which are locate
 | Setting Name | Default Value | Format | Explanation |
 | ------------ | ------------- | ------ | ----------- |
 | Allowed Entities                    | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are allowed to obtain administrator rights on the local machine. |
+| Allow Enrolled User                 | false (0) | `REG_DWORD`          | When 1, the Entra / Intune user who enrolled this computer may request administrator rights, in addition to Allowed Entities. Denied Entities still win. Does not auto-add the user at logon. |
 | Denied Entities                     | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are not allowed to obtain administrator rights on the local machine. Denials take precedence over allowed entities. |
 | Automatic Add Allowed               | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are automatically added to the Administrators group upon logon. |
 | Automatic Add Denied                | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are never allowed to be added automatically to the Administrators group upon logon. Denials take precedence over allowed entities. |

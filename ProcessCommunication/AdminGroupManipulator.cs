@@ -205,6 +205,49 @@ namespace SinclairCC.MakeMeAdmin
 
 
         /// <summary>
+        /// Determines whether the given user may request local administrator rights.
+        /// </summary>
+        /// <remarks>
+        /// When Allow Enrolled User is enabled, the Entra/Intune enrolled user is treated
+        /// as an extra allowed principal. Denied entities still win. A missing allow list
+        /// no longer means everyone is allowed; only the enrolled user plus any configured
+        /// allowed entities may request rights. Automatic-add at logon continues to use
+        /// <see cref="UserIsAuthorized"/> so this setting does not auto-elevate the enrollee.
+        /// </remarks>
+        public bool UserIsAllowedToRequestLocalAdministratorRights(WindowsIdentity userIdentity)
+        {
+            if (!Settings.AllowEnrolledUser)
+            {
+                return UserIsAuthorized(userIdentity, Settings.LocalAllowedEntities, Settings.LocalDeniedEntities);
+            }
+
+            if (userIdentity == null)
+            {
+                return false;
+            }
+
+            if ((Settings.LocalDeniedEntities != null) &&
+                (Settings.LocalDeniedEntities.Length > 0) &&
+                AccountListContainsIdentity(Settings.LocalDeniedEntities, userIdentity))
+            {
+                return false;
+            }
+
+            if (EnrolledDeviceUser.Matches(userIdentity))
+            {
+                return true;
+            }
+
+            string[] allowedSidsList = Settings.LocalAllowedEntities;
+            if ((allowedSidsList == null) || (allowedSidsList.Length == 0))
+            {
+                return false;
+            }
+
+            return AccountListContainsIdentity(allowedSidsList, userIdentity);
+        }
+
+        /// <summary>
         /// Determines whether the given user is authorized to obtain administrator rights.
         /// </summary>
         /// <param name="userIdentity">

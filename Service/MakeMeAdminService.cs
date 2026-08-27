@@ -517,6 +517,23 @@ namespace SinclairCC.MakeMeAdmin
             // Open the service host which is accessible via named pipes.
             this.OpenNamedPipeServiceHost();
 
+            if (Settings.AllowEnrolledUser)
+            {
+                string enrolledUpn = EnrolledDeviceUser.GetEnrolledUserPrincipalName();
+                if (string.IsNullOrEmpty(enrolledUpn))
+                {
+                    ApplicationLog.WriteEvent("Allow Enrolled User is enabled, but this computer does not have an Entra enrolled-user UPN in CloudDomainJoin JoinInfo. Until that value exists, only accounts in Allowed Entities can request administrator rights.", EventID.DebugMessage, System.Diagnostics.EventLogEntryType.Warning);
+                }
+                else
+                {
+                    ApplicationLog.WriteEvent(string.Format("Allow Enrolled User is enabled. Enrolled user UPN: {0}", enrolledUpn), EventID.DebugMessage, System.Diagnostics.EventLogEntryType.Information);
+                }
+            }
+            else if (Settings.LocalAllowedEntities == null)
+            {
+                ApplicationLog.WriteEvent("Allowed Entities is not set and Allow Enrolled User is off. Any local user can request administrator rights.", EventID.DebugMessage, System.Diagnostics.EventLogEntryType.Warning);
+            }
+
             // If remote requests are allowed, open the service host which
             // is accessible via TCP.
             if (Settings.AllowRemoteRequests)

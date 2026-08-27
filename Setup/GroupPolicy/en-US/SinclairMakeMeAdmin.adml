@@ -23,6 +23,9 @@
 			<string id="DeniedEntitiesDisplayName">Denied Entities (Local)</string>
 			<string id="DeniedEntitiesExplainText">Specifies the security IDs (SIDs) or names of the users or groups denied the ability to gain administrative rights on the local computer.</string>
 
+			<string id="AllowEnrolledUserDisplayName">Allow Enrolled User</string>
+			<string id="AllowEnrolledUserExplainText">When enabled, the Microsoft Entra ID / Intune user who enrolled this computer may request administrator rights, in addition to any accounts listed in Allowed Entities. Denied Entities still take precedence. This does not automatically add the user to Administrators at logon.</string>
+
 			<string id="RemoteDeniedEntitiesDisplayName">Denied Entities (Remote)</string>
 			<string id="RemoteDeniedEntitiesExplainText">Specifies the security IDs (SIDs) or names of the users or groups denied the ability to gain administrative rights remotely.</string>
 
