@@ -156,6 +156,9 @@
   <data name="RequestSentFromHost" xml:space="preserve">
     <value>Request was sent from host {0}.</value>
   </data>
+  <data name="ReasonProvidedByUser" xml:space="preserve">
+    <value>The user provided the following reason for administrator rights: {0}</value>
+  </data>
   <data name="UnknownAccount" xml:space="preserve">
     <value>Unknown Account</value>
   </data>

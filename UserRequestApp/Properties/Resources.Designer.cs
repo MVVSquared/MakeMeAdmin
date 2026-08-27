@@ -79,6 +79,33 @@ namespace SinclairCC.MakeMeAdmin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Account.
+        /// </summary>
+        public static string AuthenticationAccountLabel {
+            get {
+                return ResourceManager.GetString("AuthenticationAccountLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The password is incorrect. Enter your Windows password, not a PIN.
+        /// </summary>
+        public static string AuthenticationIncorrectPassword {
+            get {
+                return ResourceManager.GetString("AuthenticationIncorrectPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Password.
+        /// </summary>
+        public static string AuthenticationPasswordLabel {
+            get {
+                return ResourceManager.GetString("AuthenticationPasswordLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Checking administrator status....
         /// </summary>
         public static string CheckingAdminStatus {

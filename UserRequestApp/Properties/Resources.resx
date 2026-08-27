@@ -123,6 +123,15 @@
   <data name="ApplicationName" xml:space="preserve">
     <value>Make Me Admin</value>
   </data>
+  <data name="AuthenticationAccountLabel" xml:space="preserve">
+    <value>Account</value>
+  </data>
+  <data name="AuthenticationIncorrectPassword" xml:space="preserve">
+    <value>The password is incorrect. Enter your Windows password, not a PIN.</value>
+  </data>
+  <data name="AuthenticationPasswordLabel" xml:space="preserve">
+    <value>Password</value>
+  </data>
   <data name="CheckingAdminStatus" xml:space="preserve">
     <value>Checking administrator status...</value>
   </data>

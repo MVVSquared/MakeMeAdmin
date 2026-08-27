@@ -89,6 +89,12 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ReauthenticateDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ReauthenticateDialog.Designer.cs">
+      <DependentUpon>ReauthenticateDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="RequestReasonDialog.cs">
       <SubType>Form</SubType>
     </Compile>

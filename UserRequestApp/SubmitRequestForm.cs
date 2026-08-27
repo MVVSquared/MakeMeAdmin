@@ -63,6 +63,12 @@ namespace SinclairCC.MakeMeAdmin
 
 
         /// <summary>
+        /// Reason the user entered when requesting administrator rights, if any.
+        /// </summary>
+        private string lastRequestReason;
+
+
+        /// <summary>
         /// Initializes a new instance of the SubmitRequestForm class.
         /// </summary>
         public SubmitRequestForm()
@@ -151,11 +157,11 @@ namespace SinclairCC.MakeMeAdmin
         /// </param>
         private void ClickSubmitButton(object sender, EventArgs e)
         {
-            if (AuthenticationSuccessful && ReasonDialogSatisfied)
+            if (ReasonDialogSatisfied && AuthenticationSuccessful)
             {
                 this.DisableButtons();
                 this.appStatus.Text = string.Format(Properties.Resources.UIMessageAddingToGroup, LocalAdministratorGroup.LocalAdminGroupName);
-                addUserBackgroundWorker.RunWorkerAsync();
+                addUserBackgroundWorker.RunWorkerAsync(this.lastRequestReason);
             }
         }
 
@@ -163,46 +169,15 @@ namespace SinclairCC.MakeMeAdmin
         {
             get
             {
-                bool authenticationSuccessful = true;
-                if (Settings.RequireAuthenticationForPrivileges)
+                if (!Settings.RequireAuthenticationForPrivileges)
                 {
-                    authenticationSuccessful = false;
-
-                    System.Net.NetworkCredential credentials = null;
-                    int authenticationReturnCode = 0;
-                    WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
-                    try
-                    {
-                        do
-                        {
-                            do
-                            {
-                                credentials = NativeMethods.GetCredentials(this.Handle, currentIdentity.Name, authenticationReturnCode);
-                            } while ((null != credentials) && (string.Compare(credentials.UserName, currentIdentity.Name, true) != 0));
-
-                            if (null != credentials)
-                            {
-                                authenticationReturnCode = NativeMethods.ValidateCredentials(credentials);
-                            }
-                        } while ((null != credentials) && (authenticationReturnCode != 0));
-                    }
-                    catch (ArgumentException excep)
-                    {
-                        MessageBox.Show(this, string.Format("{0}: {1}", excep.GetType().Name, excep.Message), Properties.Resources.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, 0);
-                    }
-                    catch (System.ComponentModel.Win32Exception excep)
-                    {
-                        MessageBox.Show(this, string.Format("{0}: {1}", excep.GetType().Name, excep.Message), Properties.Resources.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, 0);
-                    }
-                    catch (Exception excep)
-                    {
-                        MessageBox.Show(this, string.Format("{0}: {1}", excep.GetType().Name, excep.Message), Properties.Resources.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1, 0);
-                    }
-
-                    authenticationSuccessful = (null != credentials);
-                    authenticationSuccessful &= (authenticationReturnCode == 0);
+                    return true;
                 }
-                return authenticationSuccessful;
+
+                using (ReauthenticateDialog dialog = new ReauthenticateDialog())
+                {
+                    return dialog.ShowDialog(this) == DialogResult.OK;
+                }
             }
         }
 
@@ -212,6 +187,7 @@ namespace SinclairCC.MakeMeAdmin
             get
             {
                 bool dialogSatisfied = false;
+                this.lastRequestReason = null;
 
                 switch (Settings.PromptForReason)
                 {
@@ -235,7 +211,7 @@ namespace SinclairCC.MakeMeAdmin
                                         // User did not provide a reason, but is not obligated to do so.
                                         break;
                                     case DialogResult.OK:
-                                        ApplicationLog.WriteEvent(string.Format(Properties.Resources.ReasonProvidedByUser, reasonDialog.Reason), EventID.ReasonProvidedByUser, System.Diagnostics.EventLogEntryType.Information);
+                                        this.lastRequestReason = reasonDialog.Reason;
                                         break;
                                     default:
                                         // Not sure how we got to this point, because it should never happen.
@@ -271,7 +247,7 @@ namespace SinclairCC.MakeMeAdmin
                                         else
                                         {
                                             dialogSatisfied = true;
-                                            ApplicationLog.WriteEvent(string.Format(Properties.Resources.ReasonProvidedByUser, reasonDialog.Reason), EventID.ReasonProvidedByUser, System.Diagnostics.EventLogEntryType.Information);
+                                            this.lastRequestReason = reasonDialog.Reason;
                                         }
                                         break;
                                     default:
@@ -318,7 +294,7 @@ namespace SinclairCC.MakeMeAdmin
 
             try
             {
-                channel.AddUserToAdministratorsGroup();
+                channel.AddUserToAdministratorsGroup(e.Argument as string);
             }
             catch (System.ServiceModel.EndpointNotFoundException)
             {

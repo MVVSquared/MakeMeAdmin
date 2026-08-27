@@ -178,6 +178,15 @@ namespace SinclairCC.MakeMeAdmin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The user provided the following reason for administrator rights: {0}.
+        /// </summary>
+        internal static string ReasonProvidedByUser {
+            get {
+                return ResourceManager.GetString("ReasonProvidedByUser", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unknown Account.
         /// </summary>
         internal static string UnknownAccount {

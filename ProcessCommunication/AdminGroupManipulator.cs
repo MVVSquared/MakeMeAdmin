@@ -35,7 +35,10 @@ namespace SinclairCC.MakeMeAdmin
         /// <summary>
         /// Adds a user to the local Administrators group.
         /// </summary>
-        public void AddUserToAdministratorsGroup()
+        /// <param name="requestReason">
+        /// The reason the user gave for requesting administrator rights, if any.
+        /// </param>
+        public void AddUserToAdministratorsGroup(string requestReason)
         {
             string remoteAddress = null;
 
@@ -64,6 +67,11 @@ namespace SinclairCC.MakeMeAdmin
 
             if (userIdentity != null)
             {
+                if (!string.IsNullOrWhiteSpace(requestReason))
+                {
+                    ApplicationLog.WriteEvent(string.Format(Properties.Resources.ReasonProvidedByUser, requestReason.Trim()), EventID.ReasonProvidedByUser, System.Diagnostics.EventLogEntryType.Information);
+                }
+
                 int timeoutMinutes = GetTimeoutForUser(userIdentity);
                 DateTime expirationTime = DateTime.Now.AddMinutes(timeoutMinutes);
                 LocalAdministratorGroup.AddUser(userIdentity, expirationTime, remoteAddress);

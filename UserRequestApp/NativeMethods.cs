@@ -24,6 +24,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Security;
+using System.Security.Principal;
 
 namespace SinclairCC.MakeMeAdmin
 {
@@ -112,16 +114,18 @@ namespace SinclairCC.MakeMeAdmin
 
         // Define the required LogonUser enumerations.
         private const int LOGON32_PROVIDER_DEFAULT = 0;
-
-        /*
         private const int LOGON32_LOGON_INTERACTIVE = 2;
-        */
         private const int LOGON32_LOGON_NETWORK = 3;
-        /*
-        private const int LOGON32_LOGON_BATCH = 4;
-        private const int LOGON32_LOGON_SERVICE = 5;
-        private const int LOGON32_LOGON_UNLOCK = 7;
-        */
+        private const int LOGON32_LOGON_NETWORK_CLEARTEXT = 8;
+
+        private const int ERROR_LOGON_FAILURE = 1326;
+        private const int ERROR_WRONG_PASSWORD = 1323;
+        private const int ERROR_LOGON_TYPE_NOT_GRANTED = 1385;
+
+        private const int NameUserPrincipal = 8;
+
+        [DllImport("secur32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern int GetUserNameEx(int nameFormat, StringBuilder userName, ref int nSize);
 
 
         internal static System.Net.NetworkCredential GetCredentials(IntPtr parentWindow, string userName = null, int errorCode = 0)
@@ -261,6 +265,164 @@ namespace SinclairCC.MakeMeAdmin
 
             return returnValue;
             */
+        }
+
+        /// <summary>
+        /// Validates that the given password belongs to the currently logged-on user.
+        /// </summary>
+        internal static bool ValidateCurrentUserPassword(string password)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                return false;
+            }
+
+            WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+            SplitAccount(currentIdentity.Name, out string domain, out string userName);
+            string upn = GetCurrentUserPrincipalName();
+            string machineName = Environment.MachineName;
+            bool cloudIdentity = IsCloudIdentityDomain(domain);
+
+            int error;
+            if (!cloudIdentity)
+            {
+                if (TryLogon(userName, domain, password, LOGON32_LOGON_INTERACTIVE, currentIdentity.User, out error))
+                {
+                    return true;
+                }
+
+                if (error == ERROR_LOGON_TYPE_NOT_GRANTED)
+                {
+                    if (TryLogon(userName, domain, password, LOGON32_LOGON_NETWORK, currentIdentity.User, out error))
+                    {
+                        return true;
+                    }
+
+                    if (error == ERROR_LOGON_TYPE_NOT_GRANTED &&
+                        TryLogon(userName, domain, password, LOGON32_LOGON_NETWORK_CLEARTEXT, currentIdentity.User, out error))
+                    {
+                        return true;
+                    }
+                }
+
+                // Wrong password for a domain/local SAM identity. Do not keep guessing.
+                if (error == ERROR_LOGON_FAILURE || error == ERROR_WRONG_PASSWORD)
+                {
+                    return false;
+                }
+            }
+
+            if (TryLogon(userName, machineName, password, LOGON32_LOGON_INTERACTIVE, currentIdentity.User, out _))
+            {
+                return true;
+            }
+
+            if (!string.Equals(userName, Environment.UserName, StringComparison.OrdinalIgnoreCase) &&
+                TryLogon(Environment.UserName, machineName, password, LOGON32_LOGON_INTERACTIVE, currentIdentity.User, out _))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrEmpty(upn) &&
+                TryLogon(upn, string.Empty, password, LOGON32_LOGON_INTERACTIVE, currentIdentity.User, out _))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsCloudIdentityDomain(string domain)
+        {
+            return string.Equals(domain, "AzureAD", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(domain, "MicrosoftAccount", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void SplitAccount(string accountName, out string domain, out string userName)
+        {
+            domain = string.Empty;
+            userName = accountName ?? string.Empty;
+
+            if (string.IsNullOrEmpty(accountName))
+            {
+                return;
+            }
+
+            int separatorIndex = accountName.IndexOf('\\');
+            if (separatorIndex >= 0)
+            {
+                domain = accountName.Substring(0, separatorIndex);
+                userName = accountName.Substring(separatorIndex + 1);
+                return;
+            }
+
+            separatorIndex = accountName.IndexOf('@');
+            if (separatorIndex >= 0)
+            {
+                userName = accountName;
+                domain = string.Empty;
+            }
+        }
+
+        private static string GetCurrentUserPrincipalName()
+        {
+            int size = 256;
+            StringBuilder buffer = new StringBuilder(size);
+            if (GetUserNameEx(NameUserPrincipal, buffer, ref size) != 0)
+            {
+                return buffer.ToString();
+            }
+
+            return null;
+        }
+
+        private static bool TryLogon(string userName, string domain, string password, int logonType, SecurityIdentifier expectedSid, out int error)
+        {
+            error = 0;
+            IntPtr tokenHandle = IntPtr.Zero;
+            IntPtr passwordPtr = IntPtr.Zero;
+            SecureString securePassword = null;
+
+            try
+            {
+                securePassword = new SecureString();
+                foreach (char character in password)
+                {
+                    securePassword.AppendChar(character);
+                }
+                securePassword.MakeReadOnly();
+                passwordPtr = Marshal.SecureStringToGlobalAllocUnicode(securePassword);
+
+                string logonDomain = string.IsNullOrEmpty(domain) ? null : domain;
+                bool loggedOn = LogonUser(userName, logonDomain, passwordPtr, logonType, LOGON32_PROVIDER_DEFAULT, ref tokenHandle);
+                if (!loggedOn)
+                {
+                    error = Marshal.GetLastWin32Error();
+                    return false;
+                }
+
+                using (WindowsIdentity loggedOnIdentity = new WindowsIdentity(tokenHandle))
+                {
+                    return expectedSid != null && expectedSid.Equals(loggedOnIdentity.User);
+                }
+            }
+            finally
+            {
+                if (passwordPtr != IntPtr.Zero)
+                {
+                    Marshal.ZeroFreeGlobalAllocUnicode(passwordPtr);
+                }
+
+                if (securePassword != null)
+                {
+                    securePassword.Dispose();
+                }
+
+                if (tokenHandle != IntPtr.Zero)
+                {
+                    CloseHandle(tokenHandle);
+                }
+            }
         }
     }
 }

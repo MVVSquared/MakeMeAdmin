@@ -235,7 +235,7 @@ namespace SinclairCC.MakeMeAdmin
                 }
 
                 var content = new StringContent(
-                    $"{{\"message\": \"{message.Replace("\"", "\\\"")}\", \"eventId\": \"{id}\", \"severity\": \"{severity}\"}}",
+                    $"{{\"message\": \"{EscapeJson(message)}\", \"eventId\": \"{id}\", \"severity\": \"{EscapeJson(severity)}\"}}",
                     Encoding.UTF8,
                     "application/json"
                 );
@@ -254,6 +254,21 @@ namespace SinclairCC.MakeMeAdmin
                     System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
                 }
             }
+        }
+
+        private static string EscapeJson(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n")
+                .Replace("\t", "\\t");
         }
 
         public static void WriteLogEntry(string message, EventLogEntryType entryType, int eventId)
