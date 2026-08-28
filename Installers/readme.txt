@@ -1,240 +1,120 @@
-================================================================================
-Make Me Admin - Registry Configuration Guide
-================================================================================
+Make Me Admin installer settings
+================================
 
-Make Me Admin is configured through the Windows registry. Settings control who
-may request administrator rights, how long rights last, logging destinations,
-and related behavior.
+Use MakeMeAdminMsiBuilder.exe in this folder. Fill in only the settings you
+want. Leave a field on "(software default)" or blank to keep the product
+default. Save the MSI and upload it to Intune as a line-of-business app.
+Command-line arguments are not required.
 
+Build two MSIs if you need both of these:
 
---------------------------------------------------------------------------------
-REGISTRY PATHS
---------------------------------------------------------------------------------
+  Individual (user-enrolled) PCs
+    Check "Automatically allow the Entra / Intune user who enrolled this
+    device." Optionally list IT staff in Allowed entities. The enrollee and
+    anyone on that list can request admin. Anyone else cannot.
 
-Preference (local / non-enforced) settings:
+  Labs / shared PCs
+    Leave that box unchecked. List lab or IT accounts in Allowed entities.
 
-  HKEY_LOCAL_MACHINE\SOFTWARE\Sinclair Community College\Make Me Admin
 
-Policy (enforced) settings — recommended for Intune, GPO, or MDM:
+Logging
+-------
+Syslog servers              One per line: host, or host:port:protocol:RFC
+                            Protocol is tcp or udp. RFC is 3164 or 5424.
+                            Example: syslog.example.edu:514:udp:3164
 
-  HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Sinclair Community College\Make Me Admin
+Web log endpoint            HTTPS URL that receives JSON log POSTs.
+                            Leave blank to disable web logging.
 
-Precedence:
-  - If a value exists under the Policies key, it is used.
-  - Otherwise the preference key is used.
-  - If neither is set, the application default applies.
+API key                     Optional. Stored in the MSI, then DPAPI-protected
+                            on the PC at install. Not left in the registry.
 
-Create the key if it does not exist before adding values.
+Log elevated processes      Never (default), only when the user is an
+                            administrator, or always.
 
 
---------------------------------------------------------------------------------
-HOW TO SET VALUES
---------------------------------------------------------------------------------
+Authorization
+-------------
+Allowed entities            Who may click Grant. One SID or name per line.
+                            Examples: DOMAIN\HelpDesk
+                                      AzureAD\user@wsu.edu
+                                      S-1-5-32-544
 
-Using Registry Editor (regedit.exe):
-  1. Open regedit as an administrator.
-  2. Navigate to (or create) one of the keys above.
-  3. Create a new value with the exact name listed below.
-  4. Set the type (DWORD, String, or Multi-String) and the value.
+Denied entities             Never allowed. Denied wins over Allowed and over
+                            the enrolled-user checkbox.
 
-Using PowerShell (run elevated) — example for the Policies key:
+Automatically allow the     The Entra/Intune user who enrolled this PC may
+Entra / Intune user who     request admin, in addition to Allowed entities.
+enrolled this device        Empty Allowed list + this box = enrollee only.
 
-  $path = "HKLM:\SOFTWARE\Policies\Sinclair Community College\Make Me Admin"
-  if (!(Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+Automatically add at        Users/groups put in Administrators at logon
+logon (allowed / denied)    without clicking Grant. Different from the
+                            enrolled-user checkbox.
 
-  # DWORD example
-  Set-ItemProperty -Path $path -Name "Admin Rights Timeout" -Value 15 -Type DWord
 
-  # String example
-  Set-ItemProperty -Path $path -Name "WebLogEndpoint" -Value "https://logs.example.com/api" -Type String
+Session
+-------
+Admin rights timeout        Minutes in Administrators. Default 10.
 
-  # Multi-String example
-  New-ItemProperty -Path $path -Name "Allowed Entities" -PropertyType MultiString `
-    -Value @("DOMAIN\HelpDesk","S-1-5-21-...") -Force
+Renewals allowed            Extra time-boxes the user may accept. Default 0.
 
+Remove admin rights on      Yes = take rights away at logoff, not only when
+logout                      the timer expires.
 
---------------------------------------------------------------------------------
-SETTING REFERENCE
---------------------------------------------------------------------------------
+Close the application       Yes = close the UI when rights expire.
+when rights expire
 
-Name                                 Type            Default     Description
---------------------------------------------------------------------------------
+Put the user back in        Yes = re-add them if GPO or another process
+Administrators if another   removed them before timeout.
+process removes them
 
-Allowed Entities                     REG_MULTI_SZ    (empty)     Users/groups (SID or
-                                                                 DOMAIN\Name) allowed to
-                                                                 obtain admin rights.
+Log the user off after      Seconds after expiry to force logoff. 0 or blank
+rights expire               = do not log off.
 
-Denied Entities                      REG_MULTI_SZ    (empty)     Users/groups denied admin
-                                                                 rights. Denial wins over
-                                                                 Allowed Entities.
+Log-off warning message     Shown before a forced logoff. One line per
+                            paragraph.
 
-Automatic Add Allowed                REG_MULTI_SZ    (empty)     Users/groups added to
-                                                                 Administrators automatically
-                                                                 at logon.
 
-Automatic Add Denied                 REG_MULTI_SZ    (empty)     Users/groups never auto-
-                                                                 added. Denial wins over
-                                                                 Automatic Add Allowed.
+Reason
+------
+Prompt for a reason         None (default), Optional, or Required.
 
-Remote Allowed Entities              REG_MULTI_SZ    (empty)     Users/groups allowed to
-                                                                 request rights remotely.
+Allow a free-form reason    Yes (default) allows typing. No = canned list
+                            only.
 
-Remote Denied Entities               REG_MULTI_SZ    (empty)     Users/groups denied remote
-                                                                 requests. Denial wins.
+Maximum reason length       Default 333 characters.
 
-Admin Rights Timeout                 REG_DWORD       10          Minutes the user remains
-                                                                 in the Administrators group.
+Canned reasons              One per line. Shown in the reason dialog.
 
-Renewals Allowed                     REG_DWORD       0           How many times a user may
-                                                                 renew their admin rights.
+Require the user to         Yes = they must re-enter their Windows password
+re-enter their Windows      in the app after they click Grant. This is
+password                    enforced in the UI, not by the service.
 
-Timeout Overrides                    (subkey)        (none)      Subkey under the settings
-                                                                 key. Each REG_SZ value name
-                                                                 is a SID or DOMAIN\Name;
-                                                                 the value is timeout minutes.
-                                                                 Highest matching timeout
-                                                                 for a user wins.
 
-Remove Admin Rights On Logout        REG_DWORD       0           0 = keep rights after logoff
-                                                                 until timeout (default)
-                                                                 1 = remove rights on logoff
+Remote
+------
+Allow requests from         Off by default. The service does not open the
+remote computers            TCP listener unless a remote allowed list is
+                            also set.
 
-Override Removal By Outside Process  REG_DWORD       0           0 = do not re-add (default)
-                                                                 1 = re-add the user if another
-                                                                 process (e.g. GPO) removes them
+Remote allowed / denied     Who may request admin on this PC from another
+entities                    computer. Required to open the TCP listener.
 
-Require Authentication For Privileges REG_DWORD      0           0 = disabled (default)
-                                                                 1 = require authentication
-                                                                 before granting privileges
+End remote sessions when    Yes (default) disconnects the remote session
+rights expire               when time is up.
 
-Allow Remote Requests                REG_DWORD       0           0 = disabled (default)
-                                                                 1 = allow remote requests
+TCP service port            Default 808.
 
-End Remote Sessions Upon Expiration  REG_DWORD       1           0 = leave remote session open
-                                                                 1 = end remote session when
-                                                                 rights expire (default)
+Include the Remote UI       Adds the "Make Me Admin Remote" shortcut.
 
-Close Application Upon Expiration    REG_DWORD       0           0 = leave UI open (default)
-                                                                 1 = close Make Me Admin UI
-                                                                 when rights expire
 
-Log Off After Expiration             REG_DWORD       0           Minutes after expiration to
-                                                                 force logoff (0 = disabled)
-
-Log Off Message                      REG_MULTI_SZ    (empty)     Message lines shown before
-                                                                 forced logoff.
-
-Prompt For Reason                    REG_DWORD       0           0 = None (no prompt)
-                                                                 1 = Optional
-                                                                 2 = Required
-
-Allow Free-Form Reason               REG_DWORD       1           0 = canned reasons only
-                                                                 1 = allow free-text reason
-                                                                 (default)
-
-Canned Reasons                       REG_MULTI_SZ    (empty)     Predefined reason strings
-                                                                 offered in the prompt UI.
-
-Maximum Reason Length                REG_DWORD       333         Max characters for a reason.
-
-Log Elevated Processes               REG_DWORD       0           0 = Never (default)
-                                                                 1 = Only when user is admin
-                                                                 2 = Always
-
-TCP Service Port                     REG_DWORD       808         Port used by the Make Me
-                                                                 Admin service for remote
-                                                                 communication.
-
-syslog servers                       REG_MULTI_SZ    (empty)     One or more syslog targets.
-                                                                 See SYSLOG FORMAT below.
-
-
---------------------------------------------------------------------------------
-WEB LOGGING (EXTENSION IN THIS BUILD)
---------------------------------------------------------------------------------
-
-These values are read from the Policies key only:
-
-  HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Sinclair Community College\Make Me Admin
-
-Name                                 Type            Default     Description
---------------------------------------------------------------------------------
-
-WebLogEndpoint                       REG_SZ          (none)      HTTPS/HTTP URL that receives
-                                                                 log events via HTTP POST.
-                                                                 Omit or leave empty to
-                                                                 disable web logging.
-
-WebLogApiKey                         REG_SZ          (none)      Optional API key sent as the
-                                                                 X-Api-Key request header.
-                                                                 Prefer secure deployment
-                                                                 (Intune/secrets); do not
-                                                                 hard-code secrets in scripts.
-
-When WebLogEndpoint is set, Make Me Admin POSTs JSON of the form:
-
-  {"message": "...", "eventId": "...", "severity": "..."}
-
-
---------------------------------------------------------------------------------
-SYSLOG FORMAT
---------------------------------------------------------------------------------
-
-Value name:  syslog servers
-Value type:  REG_MULTI_SZ
-Entry form:  server_address:port:protocol:RFC
-
-  server_address  Hostname or IP of the syslog server
-  port            Listening port (optional; defaults by protocol)
-  protocol        tcp or udp (optional; default udp)
-  RFC             3164 or 5424 (optional; default 3164)
-
-Examples:
-
-  syslogserver
-  syslogserver:udp
-  syslogserver:tcp
-  syslogserver:514:udp
-  syslogserver.domain.edu:514:udp
-  syslogserver:1468:tcp
-  syslogserver:1468:tcp:5424
-
-
---------------------------------------------------------------------------------
-ENTITY NAME FORMAT
---------------------------------------------------------------------------------
-
-Allowed / Denied / Automatic Add / Remote lists accept:
-
-  - Windows SIDs, e.g.  S-1-5-21-3623811015-3361044348-30300820-1013
-  - Account names, e.g. DOMAIN\UserName  or  DOMAIN\GroupName
-
-
---------------------------------------------------------------------------------
-EXAMPLE: TYPICAL INTUNE / LAB CONFIGURATION
---------------------------------------------------------------------------------
-
-Path:
-  HKLM\SOFTWARE\Policies\Sinclair Community College\Make Me Admin
-
-  Allowed Entities              MULTI_SZ   DOMAIN\StudentsWhoNeedAdmin
-  Admin Rights Timeout          DWORD      15
-  Prompt For Reason             DWORD      2          (Required)
-  Remove Admin Rights On Logout DWORD      1
-  WebLogEndpoint                SZ         https://your-log-server.example/api/logs
-  WebLogApiKey                  SZ         (deploy via secure method)
-
-
---------------------------------------------------------------------------------
-NOTES
---------------------------------------------------------------------------------
-
-- Value names are case-sensitive as documented above; use the exact spelling.
-- Boolean DWORD settings: 0 = false/disabled, 1 = true/enabled.
-- After changing policy registry values, a service restart may be required for
-  some settings to take effect (Services: Make Me Admin).
-- Group Policy ADMX/ADML templates ship with the product installation and can
-  manage most native settings. WebLogEndpoint / WebLogApiKey are extensions
-  and are set via registry (or your MDM registry payload), not via ADMX.
-
-================================================================================
+Notes
+-----
+- Names can be DOMAIN\User, AzureAD\user@tenant, or a SID.
+- Denied always wins.
+- If Allowed entities is empty and the enrolled-user box is unchecked,
+  the software default still allows every local user. The MSI builder
+  asks you to click I Understand before creating that package. Always
+  set one or the other for production.
+- After install, restart the Make Me Admin service if you need to pick
+  up a change without rebooting.

@@ -444,6 +444,28 @@ namespace SinclairCC.MakeMeAdmin
             }
         }
 
+        /// <summary>
+        /// Returns true when Remote Allowed Entities has at least one non-empty entry.
+        /// </summary>
+        private static bool RemoteAllowListIsConfigured()
+        {
+            string[] remoteAllowed = Settings.RemoteAllowedEntities;
+            if (remoteAllowed == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < remoteAllowed.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(remoteAllowed[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private bool PortSharingServiceExists
         {
             get
@@ -535,25 +557,33 @@ namespace SinclairCC.MakeMeAdmin
             }
 
             // If remote requests are allowed, open the service host which
-            // is accessible via TCP.
+            // is accessible via TCP. Do not listen until a remote allow list
+            // is set, so an unset list cannot expose every authenticated caller.
             if (Settings.AllowRemoteRequests)
             {
-                try
+                if (!RemoteAllowListIsConfigured())
                 {
-                    this.OpenTcpServiceHost();
+                    ApplicationLog.WriteEvent("Allow Remote Requests is enabled, but Remote Allowed Entities is not set. The TCP listener will not be opened until a remote allow list is configured.", EventID.RemoteAccessFailure, System.Diagnostics.EventLogEntryType.Warning);
                 }
-                catch (AddressAlreadyInUseException addressInUseException)
+                else
                 {
-                    System.Text.StringBuilder logMessage = new System.Text.StringBuilder(addressInUseException.Message);
-                    logMessage.Append(System.Environment.NewLine);
-                    // TODO: i18n.
-                    logMessage.Append(string.Format("Determine whether another application is using TCP port {0:N0}.", Settings.TCPServicePort));
-                    ApplicationLog.WriteEvent(logMessage.ToString(), EventID.RemoteAccessFailure, System.Diagnostics.EventLogEntryType.Warning);
-                }
-                catch (Exception)
-                {
-                    // TODO: i18n.
-                    ApplicationLog.WriteEvent("Unhandled exception while opening the remote request handler. Remote requests may not be honored.", EventID.RemoteAccessFailure, System.Diagnostics.EventLogEntryType.Warning);
+                    try
+                    {
+                        this.OpenTcpServiceHost();
+                    }
+                    catch (AddressAlreadyInUseException addressInUseException)
+                    {
+                        System.Text.StringBuilder logMessage = new System.Text.StringBuilder(addressInUseException.Message);
+                        logMessage.Append(System.Environment.NewLine);
+                        // TODO: i18n.
+                        logMessage.Append(string.Format("Determine whether another application is using TCP port {0:N0}.", Settings.TCPServicePort));
+                        ApplicationLog.WriteEvent(logMessage.ToString(), EventID.RemoteAccessFailure, System.Diagnostics.EventLogEntryType.Warning);
+                    }
+                    catch (Exception)
+                    {
+                        // TODO: i18n.
+                        ApplicationLog.WriteEvent("Unhandled exception while opening the remote request handler. Remote requests may not be honored.", EventID.RemoteAccessFailure, System.Diagnostics.EventLogEntryType.Warning);
+                    }
                 }
             }
 

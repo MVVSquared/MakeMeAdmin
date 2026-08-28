@@ -178,6 +178,11 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
                 return;
             }
 
+            if (!this.UserAcknowledgedOpenAuthorization())
+            {
+                return;
+            }
+
             if (!string.IsNullOrEmpty(this.apiKeyBox.Text.Trim()) && string.IsNullOrEmpty(this.webLogEndpointBox.Text.Trim()))
             {
                 DialogResult continueWithoutEndpoint = MessageBox.Show(
@@ -188,6 +193,23 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
                     MessageBoxIcon.Question,
                     MessageBoxDefaultButton.Button2);
                 if (continueWithoutEndpoint != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            if (string.Equals(SelectedYesNo(this.allowRemoteCombo), "1", StringComparison.Ordinal) &&
+                string.IsNullOrEmpty(JoinMultiString(this.remoteAllowedBox.Text)))
+            {
+                DialogResult continueWithoutRemoteList = MessageBox.Show(
+                    this,
+                    "Remote requests are enabled, but no remote allowed list is set. " +
+                    "The service will not open the TCP listener until a remote allow list is configured. Create the MSI anyway?",
+                    this.Text,
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button2);
+                if (continueWithoutRemoteList != DialogResult.Yes)
                 {
                     return;
                 }
@@ -293,6 +315,90 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             }
 
             return properties;
+        }
+
+        /// <summary>
+        /// Confirms that the builder may omit both an allow list and the enrolled-user option.
+        /// Testing still uses the product default (any local user). Production builds should set one or the other.
+        /// </summary>
+        private bool UserAcknowledgedOpenAuthorization()
+        {
+            bool hasAllowedEntities = !string.IsNullOrEmpty(JoinMultiString(this.allowedEntitiesBox.Text));
+            if (hasAllowedEntities || this.allowEnrolledUserCheckBox.Checked)
+            {
+                return true;
+            }
+
+            using (Form dialog = new Form())
+            {
+                dialog.Text = this.Text;
+                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ShowInTaskbar = false;
+                dialog.ClientSize = new Size(520, 230);
+                dialog.Font = this.Font;
+
+                Label message = new Label
+                {
+                    AutoSize = false,
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(16, 14, 16, 8),
+                    Text = "No allowed entities are listed, and the enrolled-user option is not checked." +
+                           Environment.NewLine + Environment.NewLine +
+                           "The installed software will allow any local user to request administrator rights. " +
+                           "That is OK for testing, but should not be used on production computers." +
+                           Environment.NewLine + Environment.NewLine +
+                           "Click I Understand to create the MSI anyway."
+                };
+
+                Button understandButton = new Button
+                {
+                    Text = "I Understand",
+                    DialogResult = DialogResult.OK,
+                    AutoSize = true,
+                    MinimumSize = new Size(120, 28),
+                    Margin = new Padding(8, 8, 0, 8)
+                };
+
+                Button cancelButton = new Button
+                {
+                    Text = "Cancel",
+                    DialogResult = DialogResult.Cancel,
+                    AutoSize = true,
+                    MinimumSize = new Size(100, 28),
+                    Margin = new Padding(8, 8, 8, 8)
+                };
+
+                FlowLayoutPanel buttons = new FlowLayoutPanel
+                {
+                    FlowDirection = FlowDirection.RightToLeft,
+                    Dock = DockStyle.Fill,
+                    Padding = new Padding(8, 4, 8, 8),
+                    WrapContents = false
+                };
+                buttons.Controls.Add(understandButton);
+                buttons.Controls.Add(cancelButton);
+
+                TableLayoutPanel layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    RowCount = 2,
+                    ColumnCount = 1,
+                    Padding = new Padding(0)
+                };
+                layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+                layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52F));
+                layout.Controls.Add(message, 0, 0);
+                layout.Controls.Add(buttons, 0, 1);
+
+                dialog.Controls.Add(layout);
+                dialog.CancelButton = cancelButton;
+                dialog.Shown += (s, e) => cancelButton.Focus();
+
+                return dialog.ShowDialog(this) == DialogResult.OK;
+            }
         }
 
         private static void AddIfNotEmpty(IDictionary<string, string> properties, string name, string value)
@@ -403,7 +509,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             FlowLayoutPanel panel = CreateScrollPanel();
             AddNote(panel, "One SID or name per line (for example DOMAIN\\HelpDesk or AzureAD\\user@wsu.edu). Denied entries take precedence.");
             AddNote(panel, "Labs: leave the enrolled-user box unchecked and list lab or IT accounts in Allowed entities. Individual Entra-joined PCs: check the box so the person who enrolled the device can request admin, and optionally still list IT staff in Allowed entities.");
-            AddNote(panel, "An empty allowed list with the enrolled-user box checked allows only the enrollee. Leaving both empty (and the box unchecked) leaves the software default (everyone allowed).");
+            AddNote(panel, "An empty allowed list with the enrolled-user box checked allows only the enrollee. Leaving both empty (and the box unchecked) leaves the software default (everyone allowed). Creating an MSI that way requires clicking I Understand.");
             allowed = AddMultiline(panel, "Allowed entities", 5);
             denied = AddMultiline(panel, "Denied entities", 4);
             allowEnrolledUser = new CheckBox
@@ -470,6 +576,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             out CheckBox installRemoteUi)
         {
             FlowLayoutPanel panel = CreateScrollPanel();
+            AddNote(panel, "Remote access is off by default. If you turn it on, set a remote allowed list. The service will not open the TCP listener without one.");
             allowRemote = AddYesNoCombo(panel, "Allow requests from remote computers");
             remoteAllowed = AddMultiline(panel, "Remote allowed entities", 4);
             remoteDenied = AddMultiline(panel, "Remote denied entities", 3);
