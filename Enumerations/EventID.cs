@@ -77,6 +77,11 @@ namespace SinclairCC.MakeMeAdmin
         RemoteAccessFailure,
 
         /// <summary>
+        /// A request was denied because password re-authentication failed or was not provided.
+        /// </summary>
+        AuthenticationFailed = 15,
+
+        /// <summary>
         /// An elevated process was detected.
         /// </summary>
         ElevatedProcess = 101,

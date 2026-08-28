@@ -38,7 +38,7 @@ namespace SinclairCC.MakeMeAdmin
         /// <param name="requestReason">
         /// The reason the user gave for requesting administrator rights, if any.
         /// </param>
-        public void AddUserToAdministratorsGroup(string requestReason)
+        public void AddUserToAdministratorsGroup(string requestReason, string password)
         {
             string remoteAddress = null;
 
@@ -67,6 +67,18 @@ namespace SinclairCC.MakeMeAdmin
 
             if (userIdentity != null)
             {
+                if (Settings.RequireAuthenticationForPrivileges)
+                {
+                    if (!PasswordAuthenticator.ValidatePassword(userIdentity, password))
+                    {
+                        ApplicationLog.WriteEvent(
+                            string.Format("Administrator rights request from {0} was denied because password authentication failed or was not provided.", userIdentity.Name),
+                            EventID.AuthenticationFailed,
+                            System.Diagnostics.EventLogEntryType.Warning);
+                        throw new FaultException("Authentication is required to obtain administrator rights.");
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(requestReason))
                 {
                     ApplicationLog.WriteEvent(string.Format(Properties.Resources.ReasonProvidedByUser, requestReason.Trim()), EventID.ReasonProvidedByUser, System.Diagnostics.EventLogEntryType.Information);
@@ -76,6 +88,14 @@ namespace SinclairCC.MakeMeAdmin
                 DateTime expirationTime = DateTime.Now.AddMinutes(timeoutMinutes);
                 LocalAdministratorGroup.AddUser(userIdentity, expirationTime, remoteAddress);
             }
+        }
+
+        /// <summary>
+        /// Returns whether this host requires a password before granting administrator rights.
+        /// </summary>
+        public bool AuthenticationIsRequired()
+        {
+            return Settings.RequireAuthenticationForPrivileges;
         }
 
         /// <summary>

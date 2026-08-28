@@ -87,8 +87,8 @@ Maximum reason length       Default 333 characters.
 Canned reasons              One per line. Shown in the reason dialog.
 
 Require the user to         Yes = they must re-enter their Windows password
-re-enter their Windows      in the app after they click Grant. This is
-password                    enforced in the UI, not by the service.
+re-enter their Windows      after they click Grant. The service checks the
+password                    password; skipping the UI does not bypass it.
 
 
 Remote

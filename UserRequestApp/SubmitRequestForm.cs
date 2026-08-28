@@ -67,6 +67,21 @@ namespace SinclairCC.MakeMeAdmin
         /// </summary>
         private string lastRequestReason;
 
+        /// <summary>
+        /// Password collected for service-side re-auth, if required.
+        /// </summary>
+        private string lastSubmittedPassword;
+
+        /// <summary>
+        /// Reason and password passed to the grant-rights background worker.
+        /// </summary>
+        private sealed class ElevationRequest
+        {
+            internal string Reason { get; set; }
+
+            internal string Password { get; set; }
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the SubmitRequestForm class.
@@ -157,27 +172,40 @@ namespace SinclairCC.MakeMeAdmin
         /// </param>
         private void ClickSubmitButton(object sender, EventArgs e)
         {
-            if (ReasonDialogSatisfied && AuthenticationSuccessful)
+            if (ReasonDialogSatisfied && TryCollectPassword(out string password))
             {
                 this.DisableButtons();
                 this.appStatus.Text = string.Format(Properties.Resources.UIMessageAddingToGroup, LocalAdministratorGroup.LocalAdminGroupName);
-                addUserBackgroundWorker.RunWorkerAsync(this.lastRequestReason);
+                this.lastSubmittedPassword = password;
+                addUserBackgroundWorker.RunWorkerAsync(new ElevationRequest
+                {
+                    Reason = this.lastRequestReason,
+                    Password = password
+                });
             }
         }
 
-        private bool AuthenticationSuccessful
+        /// <summary>
+        /// Collects the Windows password when the host requires re-authentication.
+        /// The service still validates the password; this dialog is only the prompt.
+        /// </summary>
+        private bool TryCollectPassword(out string password)
         {
-            get
+            password = null;
+            if (!Settings.RequireAuthenticationForPrivileges)
             {
-                if (!Settings.RequireAuthenticationForPrivileges)
+                return true;
+            }
+
+            using (ReauthenticateDialog dialog = new ReauthenticateDialog())
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK)
                 {
-                    return true;
+                    return false;
                 }
 
-                using (ReauthenticateDialog dialog = new ReauthenticateDialog())
-                {
-                    return dialog.ShowDialog(this) == DialogResult.OK;
-                }
+                password = dialog.Password;
+                return true;
             }
         }
 
@@ -294,7 +322,8 @@ namespace SinclairCC.MakeMeAdmin
 
             try
             {
-                channel.AddUserToAdministratorsGroup(e.Argument as string);
+                ElevationRequest request = e.Argument as ElevationRequest;
+                channel.AddUserToAdministratorsGroup(request != null ? request.Reason : null, request != null ? request.Password : null);
             }
             catch (System.ServiceModel.EndpointNotFoundException)
             {
@@ -321,6 +350,8 @@ namespace SinclairCC.MakeMeAdmin
         /// </param>
         private void addUserBackgroundWorker_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
+            this.lastSubmittedPassword = null;
+
             if (e.Error != null)
             {
                 System.Text.StringBuilder message = new System.Text.StringBuilder(Properties.Resources.UIMessageErrorWhileAdding);

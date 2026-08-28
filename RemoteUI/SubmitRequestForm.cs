@@ -119,7 +119,10 @@ namespace SinclairCC.MakeMeAdmin
         /// <param name="hostName">
         /// The name of the host to which the request is submitted.
         /// </param>
-        private void RequestAdminRights(string hostName)
+        /// <returns>
+        /// Succeeded if the request was sent, Cancelled if the user dismissed the password prompt.
+        /// </returns>
+        private RequestOutcome RequestAdminRights(string hostName)
         {
             // The address of the remote computer's service host.
             string remoteHostAddress = string.Format("net.tcp://{0}:{1}/MakeMeAdmin/Service", hostName, Settings.TCPServicePort);
@@ -129,10 +132,20 @@ namespace SinclairCC.MakeMeAdmin
             ChannelFactory<IAdminGroup> namedPipeFactory = new ChannelFactory<IAdminGroup>(binding, remoteHostAddress);
             IAdminGroup channel = namedPipeFactory.CreateChannel();
 
-            // Submit a request for administrator rights on the remote host.
+            string password = null;
             try
             {
-                channel.AddUserToAdministratorsGroup(null);
+                if (channel.AuthenticationIsRequired())
+                {
+                    password = PromptForPassword();
+                    if (password == null)
+                    {
+                        return RequestOutcome.Cancelled;
+                    }
+                }
+
+                channel.AddUserToAdministratorsGroup(null, password);
+                return RequestOutcome.Succeeded;
             }
             catch (System.ServiceModel.EndpointNotFoundException)
             {
@@ -141,7 +154,108 @@ namespace SinclairCC.MakeMeAdmin
             catch (Exception)
             {
                 throw;
-                // TODO: What do we do with this error?
+            }
+            finally
+            {
+                namedPipeFactory.Close();
+            }
+        }
+
+        private enum RequestOutcome
+        {
+            Succeeded,
+            Cancelled
+        }
+
+        /// <summary>
+        /// Prompts for the current user's Windows password on the UI thread.
+        /// </summary>
+        /// <returns>
+        /// The password, or null if the user cancelled.
+        /// </returns>
+        private string PromptForPassword()
+        {
+            string password = null;
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => { password = ShowPasswordDialog(); }));
+            }
+            else
+            {
+                password = ShowPasswordDialog();
+            }
+
+            return password;
+        }
+
+        private string ShowPasswordDialog()
+        {
+            using (Form dialog = new Form())
+            {
+                dialog.Text = "Enter your credentials.";
+                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.MinimizeBox = false;
+                dialog.MaximizeBox = false;
+                dialog.ShowInTaskbar = false;
+                dialog.ClientSize = new System.Drawing.Size(384, 160);
+                dialog.Font = this.Font;
+
+                Label message = new Label
+                {
+                    AutoSize = false,
+                    Location = new System.Drawing.Point(12, 12),
+                    Size = new System.Drawing.Size(360, 40),
+                    Text = "This computer requires your Windows password before granting administrator rights."
+                };
+
+                Label passwordLabel = new Label
+                {
+                    AutoSize = true,
+                    Location = new System.Drawing.Point(12, 58),
+                    Text = "Password"
+                };
+
+                TextBox passwordBox = new TextBox
+                {
+                    Location = new System.Drawing.Point(12, 78),
+                    Size = new System.Drawing.Size(348, 23),
+                    UseSystemPasswordChar = true
+                };
+
+                Button okButton = new Button
+                {
+                    Text = "&OK",
+                    DialogResult = DialogResult.OK,
+                    Size = new System.Drawing.Size(100, 28),
+                    Location = new System.Drawing.Point(168, 116),
+                    Enabled = false
+                };
+
+                Button cancelButton = new Button
+                {
+                    Text = "&Cancel",
+                    DialogResult = DialogResult.Cancel,
+                    Size = new System.Drawing.Size(100, 28),
+                    Location = new System.Drawing.Point(274, 116)
+                };
+
+                passwordBox.TextChanged += (s, e) => { okButton.Enabled = passwordBox.Text.Length > 0; };
+
+                dialog.Controls.Add(message);
+                dialog.Controls.Add(passwordLabel);
+                dialog.Controls.Add(passwordBox);
+                dialog.Controls.Add(okButton);
+                dialog.Controls.Add(cancelButton);
+                dialog.AcceptButton = okButton;
+                dialog.CancelButton = cancelButton;
+
+                if (dialog.ShowDialog(this) != DialogResult.OK)
+                {
+                    return null;
+                }
+
+                return passwordBox.Text;
             }
         }
 
@@ -179,7 +293,7 @@ namespace SinclairCC.MakeMeAdmin
                         messageBoxText.Append("{0}");
                         resultTask.Exception.Flatten().Handle(excep => { MessageBox.Show(string.Format(messageBoxText.ToString(), excep.Message), "Make Me Admin Remote", MessageBoxButtons.OK, MessageBoxIcon.Error); return true; });
                     }
-                    else
+                    else if (resultTask.Result == RequestOutcome.Succeeded)
                     {
                         MessageBox.Show(string.Format(Properties.Resources.AdminRightsRequestedOnHost, hostName), "Make Me Admin Remote", MessageBoxButtons.OK);
                     }

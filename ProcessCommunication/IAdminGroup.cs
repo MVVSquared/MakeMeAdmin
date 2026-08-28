@@ -35,8 +35,18 @@ namespace SinclairCC.MakeMeAdmin
         /// <param name="requestReason">
         /// The reason the user gave for requesting administrator rights, if any.
         /// </param>
+        /// <param name="password">
+        /// The caller's Windows password, required when the host requires re-authentication.
+        /// Ignored when that setting is off.
+        /// </param>
         [OperationContract]
-        void AddUserToAdministratorsGroup(string requestReason);
+        void AddUserToAdministratorsGroup(string requestReason, string password);
+
+        /// <summary>
+        /// Returns whether the host requires a password before granting administrator rights.
+        /// </summary>
+        [OperationContract]
+        bool AuthenticationIsRequired();
 
         /// <summary>
         /// Removes a user from the Administrators group.

@@ -563,7 +563,7 @@ namespace SinclairCC.MakeMeAdmin.MsiBuilder
             freeForm = AddYesNoCombo(panel, "Allow a free-form reason");
             maxLength = AddTextBox(panel, "Maximum reason length (default 333)");
             canned = AddMultiline(panel, "Canned reasons (one per line)", 5);
-            requireAuth = AddYesNoCombo(panel, "Require the user to re-enter their Windows password in the app after they submit");
+            requireAuth = AddYesNoCombo(panel, "Require the user to re-enter their Windows password (enforced by the service)");
             return WrapTab("Reason", panel);
         }
 

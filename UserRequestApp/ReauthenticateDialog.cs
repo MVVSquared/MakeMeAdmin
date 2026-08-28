@@ -29,6 +29,8 @@ namespace SinclairCC.MakeMeAdmin
     /// </summary>
     internal partial class ReauthenticateDialog : Form
     {
+        public string Password { get; private set; }
+
         public ReauthenticateDialog()
         {
             InitializeComponent();
@@ -61,6 +63,7 @@ namespace SinclairCC.MakeMeAdmin
             bool authenticated = NativeMethods.ValidateCurrentUserPassword(this.passwordTextBox.Text);
             if (authenticated)
             {
+                this.Password = this.passwordTextBox.Text;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
                 return;
