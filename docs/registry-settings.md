@@ -12,7 +12,9 @@ To enforce settings, you should use the Group Policy templates, which are locate
 | Setting Name | Default Value | Format | Explanation |
 | ------------ | ------------- | ------ | ----------- |
 | Allowed Entities                    | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are allowed to obtain administrator rights on the local machine. |
-| Allow Enrolled User                 | false (0) | `REG_DWORD`          | When 1, the Entra / Intune user who enrolled this computer may request administrator rights, in addition to Allowed Entities. Denied Entities still win. Does not auto-add the user at logon. |
+| Allow Enrolled User                 | false (0) | `REG_DWORD`          | When 1, the Entra / Intune user who enrolled this computer may request administrator rights, in addition to Allowed Entities. Denied Entities still win. Does not auto-add the user at logon. This setting is unique to [this fork](this-fork.md). |
+| WebLogEndpoint                      | *empty*   | `REG_SZ`             | HTTPS URL for JSON log POSTs. Leave empty to disable web logging. Unique to [this fork](this-fork.md). |
+| WebLogApiKey                        | *empty*   | (DPAPI blob)         | Optional API key for the web log endpoint. Not stored in the registry after install; see [this fork](this-fork.md). |
 | Denied Entities                     | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are not allowed to obtain administrator rights on the local machine. Denials take precedence over allowed entities. |
 | Automatic Add Allowed               | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are automatically added to the Administrators group upon logon. |
 | Automatic Add Denied                | *empty*   | `REG_MULTI_SZ`       | List of SIDs or names for users or groups that are never allowed to be added automatically to the Administrators group upon logon. Denials take precedence over allowed entities. |
